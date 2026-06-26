@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="vyntra-logo.jpg" alt="Vyntra Logo" width="120" height="120" style="border-radius: 28px;" />
-
-# ⚡ Vyntra
+# ⚡ AetherPay
 
 ### *Recharge your world, instantly.*
 
@@ -31,18 +29,13 @@ built with React Native · Node.js · PostgreSQL · Razorpay · iOS 27 Liquid Gl
 
 ## 📖 Table of Contents
 
-- [About Vyntra](#-about-vyntra)
+- [About AetherPay](#-about-aetherpay)
 - [Key Features](#-key-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Third-Party Integrations](#-third-party-integrations--api-credentials-needed)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#1-backend-setup)
-  - [Admin Panel Setup](#2-admin-panel-setup)
-  - [Mobile App Setup](#3-mobile-app-setup)
-  - [Docker Setup](#4-docker-compose-full-local-environment)
 - [Environment Variables](#-environment-variables)
 - [API Documentation](#-api-documentation)
 - [Mobile App Screens](#-mobile-app-screens)
@@ -54,16 +47,16 @@ built with React Native · Node.js · PostgreSQL · Razorpay · iOS 27 Liquid Gl
 
 ---
 
-## 🌟 About Vyntra
+## 🌟 About AetherPay
 
-**Vyntra** is a production-grade, full-stack **BBPS (Bharat Bill Payment System) Mobile Recharge & Bill Payment Platform** designed for the Indian market. It enables users to recharge mobile phones (prepaid/postpaid), pay DTH bills, and settle utility bills (electricity, water, gas, insurance, and 100+ more BBPS billers) — all through a single, beautiful app.
+**AetherPay** is a production-grade, full-stack **BBPS (Bharat Bill Payment System) Mobile Recharge & Bill Payment Platform** designed for the Indian market. It enables users to recharge mobile phones (prepaid/postpaid), pay DTH bills, and settle utility bills (electricity, water, gas, insurance, and 100+ more BBPS billers) — all through a single, beautiful app.
 
-Built from the ground up with a **premium iOS 27 Liquid Glass design language**, Vyntra delivers an experience that feels native, fast, and delightful. Every interaction is animated with spring physics, every surface is frosted glass, and every transition feels alive.
+Built from the ground up with a **premium iOS 27 Liquid Glass design language**, AetherPay delivers an experience that feels native, fast, and delightful. Every interaction is animated with spring physics, every surface is frosted glass, and every transition feels alive.
 
-### Why Vyntra?
+### Why AetherPay?
 
-| Traditional Apps | Vyntra |
-|-----------------|--------|
+| Traditional Apps | AetherPay |
+|-----------------|-----------|
 | Generic, dated UI | iOS 27 Liquid Glass, premium light mode |
 | Basic features | Complete BBPS integration + smart wallet |
 | No API flexibility | Multi-API switching per operator/circle |
@@ -112,7 +105,7 @@ Built from the ground up with a **premium iOS 27 Liquid Glass design language**,
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         VYNTRA PLATFORM                              │
+│                        AETHERPAY PLATFORM                            │
 │                                                                      │
 │  ┌─────────────────┐          ┌──────────────────────────────────┐  │
 │  │   📱 Mobile App  │          │       🖥️ Admin Panel             │  │
@@ -205,7 +198,7 @@ Built from the ground up with a **premium iOS 27 Liquid Glass design language**,
 
 ## 🔑 Third-Party Integrations & API Credentials Needed
 
-To make Vyntra fully live and working, you need accounts and API keys from these providers:
+To make AetherPay fully live and working, you need accounts and API keys from these providers:
 
 ### Mandatory (Core Functionality)
 
@@ -223,7 +216,7 @@ To make Vyntra fully live and working, you need accounts and API keys from these
 > Without DLT-registered Sender ID and approved templates, OTP SMS **will not be delivered**.  
 > - One-time cost: **~₹5,900** for DLT registration  
 > - Register at: DLT portals like Vodafone, Airtel, or BSNL  
-> - Get: Entity ID, Sender ID (e.g., VYNTRA), Template ID per message type
+> - Get: Entity ID, Sender ID (e.g., AETHER), Template ID per message type
 
 ### Optional (Recommended)
 
@@ -253,14 +246,11 @@ mobile-recharge-application/
 │   │   ├── theme/                # iOS 27 design system (colors, glass, typography)
 │   │   ├── components/
 │   │   │   ├── ui/               # GlassCard, FloatingTabBar, SlideButton, PinInput, etc.
-│   │   │   └── modals/           # RechargeConfirmModal, FilterModal
+│   │   │   └── modals/           # RechargeConfirmModal
 │   │   ├── screens/
-│   │   │   ├── auth/             # Splash, Onboarding, PhoneLogin, OTPVerify, EmailLogin
-│   │   │   ├── main/             # Home, Recharge, Wallet, History, Profile
-│   │   │   ├── recharge/         # MobilePrepaid, MobilePostpaid, DTH, BBPS, Plans, Confirm, Status
-│   │   │   ├── wallet/           # AddMoney, FundRequest, WalletHistory
-│   │   │   ├── offers/           # Offers, Referral
-│   │   │   └── profile/          # EditProfile, Notifications, Security, Support, TxnDetail
+│   │   │   ├── auth/             # Splash, PhoneLogin, OTPVerify
+│   │   │   ├── main/             # Home, Recharge, Wallet, History
+│   │   │   └── profile/          # ProfileScreen
 │   │   ├── navigation/           # RootNavigator, AuthNavigator, MainNavigator
 │   │   ├── store/                # Zustand stores (auth, wallet, recharge)
 │   │   ├── services/             # API service layer (auth, recharge, wallet, bbps, offers)
@@ -272,25 +262,14 @@ mobile-recharge-application/
 │
 ├── 🖥️ admin/                     # React.js Admin Panel
 │   ├── src/
-│   │   ├── styles/               # global.css, glass.css, animations.css, components.css
+│   │   ├── styles/               # global.css, glass.css, animations.css
 │   │   ├── components/
-│   │   │   ├── layout/           # Sidebar, Header, Layout, ProtectedRoute
-│   │   │   ├── ui/               # Button, Table, Modal, Badge, Pagination, StatCard, etc.
-│   │   │   └── charts/           # RevenueChart, TransactionChart, StatusPieChart, OperatorChart
 │   │   ├── pages/
 │   │   │   ├── auth/             # LoginPage
-│   │   │   ├── dashboard/        # DashboardPage
-│   │   │   ├── users/            # UsersList, UserDetail, FundRequests
-│   │   │   ├── reports/          # RechargeReport, FundOrderReport, ApiLogs
-│   │   │   ├── api-management/   # ApiConfigs, ApiSwitching, CircleSwitch
-│   │   │   ├── operators/        # Operators, Plans
-│   │   │   ├── commission/       # CommissionConfig
-│   │   │   ├── communication/    # SMS, WhatsApp, Email, PaymentGateway
-│   │   │   ├── rbac/             # Roles, AdminUsers
-│   │   │   └── content/          # Banners, Offers, Coupons
-│   │   ├── store/                # auth.store, ui.store
+│   │   │   └── DashboardPage.tsx
+│   │   ├── store/                # auth.store
 │   │   ├── services/             # All API service files
-│   │   ├── hooks/                # useAuth, usePagination, useExport
+293: │   │   ├── hooks/                
 │   │   ├── utils/                # formatters, constants
 │   │   └── types/                # TypeScript type definitions
 │   ├── index.html
@@ -314,7 +293,6 @@ mobile-recharge-application/
 │
 ├── 🐳 docker-compose.yml         # PostgreSQL + Redis + Backend
 ├── 📄 .gitignore
-├── 🖼️ vyntra-logo.jpg            # App logo
 └── 📖 README.md                  # This file
 ```
 
@@ -328,8 +306,8 @@ Make sure you have the following installed:
 
 - **Node.js** 20.x or higher — [nodejs.org](https://nodejs.org)
 - **npm** 10.x or higher
-- **PostgreSQL** 16 — [postgresql.org](https://www.postgresql.org) (or use Docker)
-- **Redis** 7 — [redis.io](https://redis.io) (or use Docker)
+- **PostgreSQL** 16 — [postgresql.org](https://www.postgresql.org) (or use SQLite in dev mode)
+- **Redis** 7 — [redis.io](https://redis.io) (or fallback to Mock Client)
 - **Expo CLI** — `npm install -g expo-cli`
 - **Git** — [git-scm.com](https://git-scm.com)
 
@@ -349,31 +327,21 @@ npm install
 cp .env.example .env
 
 # Edit .env with your credentials
-nano .env  # or open in your editor
-
-# Create PostgreSQL database
-createdb vyntra_db
-# OR: psql -U postgres -c "CREATE DATABASE vyntra_db;"
-
-# Sync database models (auto-creates all tables)
-npm run dev
-# Tables are auto-synced on first run (Sequelize sync)
+# Set USE_SQLITE=true to bypass PostgreSQL local setup
 
 # Seed default data (roles, super admin, operators)
-npm run seed
+USE_SQLITE=true NODE_ENV=development node src/seeders/run.js
 
 # Start development server
-npm run dev
+USE_SQLITE=true NODE_ENV=development npm run dev
 # Server runs on http://localhost:3000
 ```
 
 **Default Super Admin Credentials:**
 ```
-Email: admin@vyntra.in
+Email: admin@aetherpay.in
 Password: Admin@123
 ```
-
-> ⚠️ **Change these immediately** in production!
 
 ---
 
@@ -388,12 +356,9 @@ npm install
 # Copy environment variables
 cp .env.example .env
 
-# Edit .env
-VITE_API_URL=http://localhost:3000
-
 # Start development server
 npm run dev
-# Admin panel runs on http://localhost:5174
+# Admin panel runs on http://localhost:5173
 ```
 
 ---
@@ -406,46 +371,8 @@ cd ../mobile
 # Install dependencies
 npm install
 
-# Copy environment variables
-cp .env.example .env
-
-# Edit .env
-EXPO_PUBLIC_API_URL=http://localhost:3000        # Your backend URL
-EXPO_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxx  # Your Razorpay test key
-
 # Start Expo development server
 npx expo start
-
-# Then press:
-# 'i' for iOS simulator
-# 'a' for Android emulator
-# Scan QR code with Expo Go app for physical device
-```
-
-**For physical device testing:**  
-Replace `localhost` in `.env` with your machine's local IP (e.g., `http://192.168.1.100:3000`)
-
----
-
-### 4. Docker Compose (Full Local Environment)
-
-Start PostgreSQL + Redis + Backend with one command:
-
-```bash
-# In the root directory
-docker-compose up -d
-
-# Wait for services to be healthy
-docker-compose ps
-
-# Run seeds inside container
-docker-compose exec backend npm run seed
-
-# Stop all services
-docker-compose down
-
-# Stop and remove volumes (fresh start)
-docker-compose down -v
 ```
 
 ---
@@ -455,81 +382,35 @@ docker-compose down -v
 ### Backend (`backend/.env`)
 
 ```env
-# ─── App ────────────────────────────────────────────────
 NODE_ENV=development
 PORT=3000
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
-JWT_REFRESH_SECRET=your-refresh-secret-key-minimum-32-chars
+USE_SQLITE=true
+JWT_SECRET=aetherpay-super-secret-jwt-key
+JWT_REFRESH_SECRET=aetherpay-refresh-secret-key
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=30d
-ENCRYPTION_KEY=32-character-aes-encryption-key!!
+ENCRYPTION_KEY=32-char-encryption-key-here-for-aether-pay
 FRONTEND_URL=http://localhost:5173
-ADMIN_URL=http://localhost:5174
+ADMIN_URL=http://localhost:5173
 
-# ─── Database ────────────────────────────────────────────
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=vyntra_db
+DB_NAME=aetherpay_db
 DB_USER=postgres
-DB_PASSWORD=your-database-password
+DB_PASSWORD=postgres
 
-# ─── Redis ───────────────────────────────────────────────
 REDIS_URL=redis://localhost:6379
 
-# ─── Firebase (Auth + FCM) ───────────────────────────────
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"..."}
-# Get from: Firebase Console → Project Settings → Service Accounts
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=your-razorpay-secret
 
-# ─── Razorpay ────────────────────────────────────────────
-RAZORPAY_KEY_ID=rzp_live_xxxxxxxxxxxx
-RAZORPAY_KEY_SECRET=your-razorpay-secret-key
-RAZORPAY_WEBHOOK_SECRET=your-webhook-secret
-# Get from: razorpay.com/dashboard → Settings → API Keys
-
-# ─── MSG91 (SMS OTP) ─────────────────────────────────────
 MSG91_API_KEY=your-msg91-api-key
-MSG91_SENDER_ID=VYNTRA
-MSG91_TEMPLATE_ID=your-dlt-approved-template-id
-# Get from: msg91.com → Dashboard → API
+MSG91_SENDER_ID=AETHER
+MSG91_TEMPLATE_ID=your-dlt-template-id
 
-# ─── SendGrid (Email) ────────────────────────────────────
-SENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxx
-SENDGRID_FROM_EMAIL=noreply@yourdomain.com
-SENDGRID_FROM_NAME=Vyntra
-# Get from: sendgrid.com → Settings → API Keys
-
-# ─── BBPS / Recharge Aggregator ──────────────────────────
-BBPS_PROVIDER=recharge1           # Options: recharge1 | pay2all | billbox
-RECHARGE1_MEMBER_ID=your-member-id
-RECHARGE1_API_PASSWORD=your-api-password
-RECHARGE1_BASE_URL=https://www.recharge1.com/API2
-PAY2ALL_API_KEY=your-pay2all-api-key
-PAY2ALL_BASE_URL=https://api.pay2all.in/v1
-BILLBOX_API_KEY=your-billbox-key
-BILLBOX_BASE_URL=https://api.billbox.in/v1
-
-# ─── Cloudinary (Image Uploads) ──────────────────────────
-CLOUDINARY_CLOUD_NAME=your-cloudinary-name
-CLOUDINARY_API_KEY=your-cloudinary-api-key
-CLOUDINARY_API_SECRET=your-cloudinary-secret
-# Get from: cloudinary.com → Dashboard
-
-# ─── Admin ───────────────────────────────────────────────
-ADMIN_JWT_SECRET=admin-specific-jwt-secret-different-from-user
-ADMIN_JWT_EXPIRES_IN=8h
-```
-
-### Mobile App (`mobile/.env`)
-
-```env
-EXPO_PUBLIC_API_URL=http://localhost:3000
-EXPO_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
-```
-
-### Admin Panel (`admin/.env`)
-
-```env
-VITE_API_URL=http://localhost:3000
+SENDGRID_API_KEY=SG.xxxxxxxxxxxx
+SENDGRID_FROM_EMAIL=noreply@aetherpay.in
+SENDGRID_FROM_NAME=AetherPay
 ```
 
 ---
@@ -541,36 +422,6 @@ VITE_API_URL=http://localhost:3000
 http://localhost:3000/api
 ```
 
-### Authentication
-All protected endpoints require:
-```
-Authorization: Bearer <access_token>
-```
-
-### Response Format
-```json
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": { ... }
-}
-```
-
-Paginated responses:
-```json
-{
-  "success": true,
-  "message": "Success",
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "totalPages": 5
-  }
-}
-```
-
 ### Auth Endpoints
 
 | Method | Endpoint | Description | Auth |
@@ -579,231 +430,8 @@ Paginated responses:
 | POST | `/auth/verify-otp` | Verify OTP + login | Public |
 | POST | `/auth/login` | Email/password login | Public |
 | POST | `/auth/register` | Register new user | Public |
-| POST | `/auth/admin/login` | Admin login | Public |
 | POST | `/auth/refresh-token` | Refresh access token | Public |
 | POST | `/auth/logout` | Invalidate tokens | Auth |
-| POST | `/auth/forgot-password` | Send reset email | Public |
-| POST | `/auth/reset-password` | Reset password | Public |
-
-### Recharge Endpoints
-
-| Method | Endpoint | Description | Auth |
-|--------|---------|-------------|------|
-| GET | `/recharge/operators` | List operators by type | Auth |
-| GET | `/recharge/operators/:id/plans` | Browse plans for operator+circle | Auth |
-| GET | `/recharge/circles` | List telecom circles | Auth |
-| POST | `/recharge/detect-operator` | Auto-detect operator from number | Auth |
-| POST | `/recharge/initiate` | Start recharge transaction | Auth |
-| GET | `/recharge/status/:txnId` | Check transaction status | Auth |
-| POST | `/recharge/dispute/:txnId` | Raise dispute | Auth |
-
-### BBPS Endpoints
-
-| Method | Endpoint | Description | Auth |
-|--------|---------|-------------|------|
-| GET | `/bbps/categories` | List BBPS categories | Auth |
-| GET | `/bbps/billers` | Billers by category | Auth |
-| POST | `/bbps/fetch-bill` | Fetch bill from biller | Auth |
-| POST | `/bbps/pay` | Pay a bill | Auth |
-
-### Wallet Endpoints
-
-| Method | Endpoint | Description | Auth |
-|--------|---------|-------------|------|
-| GET | `/wallet` | Balance + recent transactions | Auth |
-| GET | `/wallet/history` | Full wallet history (paginated) | Auth |
-| POST | `/wallet/add-money/create-order` | Create Razorpay order | Auth |
-| POST | `/wallet/add-money/verify` | Verify payment + credit wallet | Auth |
-| POST | `/wallet/fund-request` | Submit fund request | Auth |
-| GET | `/wallet/fund-requests` | User's fund requests | Auth |
-
-> See full API docs in `/backend/docs/` directory.
-
----
-
-## 📱 Mobile App Screens
-
-### Auth Flow
-| Screen | Description |
-|--------|-------------|
-| `SplashScreen` | Animated Vyntra logo reveal with spring animation |
-| `OnboardingScreen` | 3-slide intro with swipeable glass cards |
-| `PhoneLoginScreen` | Phone number entry with +91 prefix |
-| `OTPVerifyScreen` | 6-box OTP input with countdown timer and auto-verify |
-| `EmailLoginScreen` | Email + password with Google OAuth |
-| `RegisterScreen` | Full registration form |
-
-### Main App
-| Screen | Description |
-|--------|-------------|
-| `HomeScreen` | Balance card, quick actions grid, banners, offers, recent transactions |
-| `RechargeScreen` | Tab menu: Prepaid, Postpaid, DTH, Bills |
-| `WalletScreen` | Balance, add money, fund requests, history |
-| `HistoryScreen` | All transactions with filters (status, date, operator) |
-| `ProfileScreen` | User info, settings, referral, logout |
-
-### Recharge Screens
-| Screen | Description |
-|--------|-------------|
-| `MobilePrepaidScreen` | Number entry, operator auto-detect, amount, plans |
-| `MobilePostpaidScreen` | Postpaid bill fetch and payment |
-| `DTHRechargeScreen` | DTH operator + subscriber ID + plans |
-| `BBPSCategoriesScreen` | 12 BBPS category grid |
-| `BillersListScreen` | Billers for selected category |
-| `BillPaymentScreen` | Account number + bill fetch + pay |
-| `PlansScreen` | Browse plans: Popular, Unlimited, Data, Talktime |
-| `RechargeConfirmScreen` | Summary with slide-to-pay button |
-| `RechargeStatusScreen` | Success/Pending/Failed with animations |
-
----
-
-## 🖥️ Admin Panel Pages
-
-| Page | Route | Description |
-|------|-------|-------------|
-| Login | `/login` | Admin authentication |
-| Dashboard | `/dashboard` | Live stats, charts, latest transactions |
-| Users List | `/users` | Search, filter, block, wallet adjust |
-| User Detail | `/users/:id` | Full user info, wallet, transaction history |
-| Fund Requests | `/fund-requests` | Approve/reject wallet top-up requests |
-| Recharge Report | `/reports/recharge` | 20+ column report with Excel export |
-| Fund Order Report | `/reports/fund-orders` | All fund transfer requests |
-| API Logs | `/reports/api-logs` | Full request/response viewer |
-| API Configs | `/api-configs` | Add/edit/delete recharge APIs |
-| API Switching | `/api-switching` | Operator → API routing matrix |
-| Operators | `/operators` | CRUD telecom operators |
-| Plans | `/plans` | Recharge plans with bulk CSV upload |
-| Commission | `/commission` | Flat/%, circle slab, special, range rules |
-| SMS Config | `/sms-config` | MSG91 sender config |
-| WhatsApp Config | `/whatsapp-config` | Interakt/Wati config |
-| Email Config | `/email-config` | SendGrid/SMTP config |
-| Payment Gateway | `/payment-gateway` | Razorpay config + transaction logs |
-| Roles | `/roles` | RBAC role management with permissions |
-| Admin Users | `/admin-users` | Admin team management |
-| Banners | `/banners` | Home screen banner management |
-| Offers | `/offers` | Cashback offers management |
-| Coupons | `/coupons` | Coupon code management |
-
----
-
-## 🗄️ Database Schema
-
-The platform uses **18 PostgreSQL tables** with Sequelize ORM:
-
-| Table | Description |
-|-------|-------------|
-| `users` | App users with wallet balance, KYC, referral |
-| `transactions` | All recharge & bill payment transactions |
-| `wallet_transactions` | Wallet credits/debits (fund top-up, recharge debit, refund) |
-| `fund_requests` | Manual wallet top-up requests |
-| `operators` | Telecom & BBPS operators |
-| `plans` | Recharge plans per operator and circle |
-| `api_configs` | Recharge API configurations (encrypted credentials) |
-| `api_logs` | Full request/response logs per API call |
-| `circle_switches` | Operator+Circle → API routing table |
-| `commissions` | Commission rules (flat/%, slab, special, range) |
-| `offers` | Cashback and discount offers |
-| `coupons` | Coupon codes |
-| `coupon_usages` | Coupon usage tracking per user |
-| `admin_users` | Admin panel users |
-| `roles` | Admin roles with JSONB permissions array |
-| `banners` | Home screen promotional banners |
-| `notifications` | User push notification history |
-| `otp_records` | OTP attempts with expiry tracking |
-
----
-
-## ⚡ BBPS & Recharge Integration
-
-Vyntra supports **3 major BBPS/Recharge API providers**, switchable via environment variable:
-
-### Recharge1 (Default)
-```env
-BBPS_PROVIDER=recharge1
-RECHARGE1_MEMBER_ID=xxx
-RECHARGE1_API_PASSWORD=xxx
-RECHARGE1_BASE_URL=https://www.recharge1.com/API2
-```
-
-### Pay2All
-```env
-BBPS_PROVIDER=pay2all
-PAY2ALL_API_KEY=xxx
-PAY2ALL_BASE_URL=https://api.pay2all.in/v1
-```
-
-### BillBox
-```env
-BBPS_PROVIDER=billbox
-BILLBOX_API_KEY=xxx
-BILLBOX_BASE_URL=https://api.billbox.in/v1
-```
-
-The API switching system also supports **multiple APIs simultaneously** — different operators or circles can route to different API providers, configured from the Admin Panel.
-
----
-
-## 🚢 Deployment
-
-### Backend (Railway / Render)
-```bash
-# railway.toml already configured
-railway login
-railway init
-railway up
-```
-
-### Admin Panel (Vercel)
-```bash
-cd admin
-vercel --prod
-# Set VITE_API_URL environment variable in Vercel dashboard
-```
-
-### Mobile App (Expo EAS Build)
-```bash
-cd mobile
-npm install -g eas-cli
-eas login
-eas build:configure
-
-# Android (APK/AAB)
-eas build --platform android
-
-# iOS (IPA)
-eas build --platform ios
-```
-
-> **Google Play Store** requires AAB format. **App Store** requires IPA + Apple Developer Program.
-
----
-
-## 📋 TRAI DLT Compliance
-
-For SMS OTP to work in India, you **must** complete DLT registration:
-
-1. Register your entity on a DLT portal (Vodafone, Airtel, or BSNL)
-2. Get **Entity ID** and **Sender ID** (e.g., VYNTRA)
-3. Create and get approved **message templates** for:
-   - OTP delivery
-   - Recharge success/failure
-   - Wallet credit notification
-4. Configure in `backend/.env`: `MSG91_SENDER_ID`, `MSG91_TEMPLATE_ID`
-5. Configure in MSG91 dashboard
-
----
-
-## 🔐 Security
-
-- JWT with short expiry (15min) + refresh token rotation
-- Redis-backed token blacklist for immediate revocation
-- API credentials AES-encrypted in database
-- Rate limiting: OTP (5/hr/phone), API (100/min/IP)
-- Helmet.js security headers
-- CORS restricted to configured origins
-- Bcrypt password hashing (cost factor: 12)
-- SQL injection prevention via Sequelize parameterized queries
-- Input validation via Joi on all endpoints
 
 ---
 
@@ -827,18 +455,14 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 **Raunit Raj**  
 📧 [raunitx.online](https://raunitx.online)  
-📱 +91-72928-58748  
 🌐 [raunitx-02](https://github.com/raunitx-02)
 
 ---
 
 <div align="center">
 
-**⚡ Vyntra** — *Recharge your world, instantly.*
+**⚡ AetherPay** — *Recharge your world, instantly.*
 
 Made with ❤️ for the Indian fintech ecosystem
-
-[![Star this repo](https://img.shields.io/github/stars/raunitx-02/mobile-recharge-application?style=social)](https://github.com/raunitx-02/mobile-recharge-application)
-[![Follow](https://img.shields.io/github/followers/raunitx-02?style=social)](https://github.com/raunitx-02)
 
 </div>
