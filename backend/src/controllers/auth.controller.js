@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
-const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
+const { generateAccessToken, generateRefreshToken, generateAdminToken } = require('../utils/jwt');
 const { generateOTP } = require('../utils/otp');
-const { User, OTPRecord, Notification } = require('../models');
+const { User, OTPRecord, Notification, AdminUser, Role } = require('../models');
 const msg91Service = require('../services/msg91.service');
 const redis = require('../config/redis');
 const response = require('../utils/response');
@@ -25,9 +25,13 @@ const sendOTP = async (req, res) => {
     });
 
     // Send SMS
-    await msg91Service.sendOTP(phone, otp);
-
-    return response.success(res, null, 'OTP sent successfully');
+    if (process.env.NODE_ENV === 'development') {
+      logger.info(`[DEV MODE] Generated OTP for ${phone} is ${otp}`);
+      return response.success(res, { otp }, 'OTP sent successfully (Development Bypass)');
+    } else {
+      await msg91Service.sendOTP(phone, otp);
+      return response.success(res, null, 'OTP sent successfully');
+    }
   } catch (err) {
     logger.error('sendOTP error:', err);
     return response.error(res, 'Failed to send OTP. Please try again.', 500);
@@ -119,45 +123,80 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
+    // 1. First attempt to find in User table
+    let user = await User.findOne({ where: { email } });
+    if (user) {
+      if (!user.password_hash) {
+        return response.error(res, 'Password not set. Please login using OTP.', 401);
+      }
+
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      if (!isMatch) {
+        return response.error(res, 'Invalid email or password', 401);
+      }
+
+      if (user.status === 'blocked') {
+        return response.error(res, 'Your account has been blocked. Please contact support.', 403);
+      }
+
+      const accessToken = generateAccessToken(user.id);
+      const refreshToken = generateRefreshToken(user.id);
+
+      if (redis && redis.status !== 'mock') {
+        await redis.setex(`refresh_token:${user.id}:${refreshToken}`, 30 * 24 * 60 * 60, 'true');
+      }
+
+      return response.success(res, {
+        user: {
+          id: user.id,
+          phone: user.phone,
+          email: user.email,
+          name: user.name,
+          wallet_balance: user.wallet_balance,
+          referral_code: user.referral_code,
+          kyc_status: user.kyc_status,
+          status: user.status
+        },
+        accessToken,
+        refreshToken
+      }, 'Login successful');
+    }
+
+    // 2. Fallback to find in AdminUser table
+    const admin = await AdminUser.findOne({
+      where: { email },
+      include: [{ model: Role, as: 'role' }]
+    });
+
+    if (!admin) {
       return response.error(res, 'Invalid email or password', 401);
     }
 
-    if (!user.password_hash) {
-      return response.error(res, 'Password not set. Please login using OTP.', 401);
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, admin.password_hash);
     if (!isMatch) {
       return response.error(res, 'Invalid email or password', 401);
     }
 
-    if (user.status === 'blocked') {
-      return response.error(res, 'Your account has been blocked. Please contact support.', 403);
+    if (admin.status === 'blocked') {
+      return response.error(res, 'Admin account has been blocked', 403);
     }
 
-    const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
-
-    if (redis && redis.status !== 'mock') {
-      await redis.setex(`refresh_token:${user.id}:${refreshToken}`, 30 * 24 * 60 * 60, 'true');
-    }
+    // Generate Admin Token
+    const accessToken = generateAdminToken(admin.id, admin.role_id);
 
     return response.success(res, {
       user: {
-        id: user.id,
-        phone: user.phone,
-        email: user.email,
-        name: user.name,
-        wallet_balance: user.wallet_balance,
-        referral_code: user.referral_code,
-        kyc_status: user.kyc_status,
-        status: user.status
+        id: admin.id,
+        email: admin.email,
+        name: admin.name,
+        role: {
+          name: admin.role?.name,
+          permissions: admin.role?.permissions || []
+        },
+        status: admin.status
       },
-      accessToken,
-      refreshToken
-    }, 'Login successful');
+      accessToken
+    }, 'Admin login successful');
   } catch (err) {
     logger.error('login error:', err);
     return response.error(res, 'Login failed', 500);

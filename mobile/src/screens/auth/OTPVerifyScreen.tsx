@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { PinInput } from '../../components/ui/PinInput';
 import { GlassButton } from '../../components/ui/GlassButton';
@@ -13,8 +14,8 @@ import { AuthStackParamList } from '../../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'OTPVerify'>;
 
 export const OTPVerifyScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { phone } = route.params;
-  const [otp, setOtp] = useState('');
+  const { phone, devOtp } = route.params;
+  const [otp, setOtp] = useState(devOtp || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   
@@ -56,40 +57,55 @@ export const OTPVerifyScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <LinearGradient
+      colors={['#E8EAF6', '#F5F5F7', '#E3F2FD']}
       style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
     >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Enter OTP Code</Text>
-          <Text style={styles.subtitle}>Enter the 6-digit DLT authentication code sent to +91 {phone}</Text>
-        </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Enter OTP Code</Text>
+            <Text style={styles.subtitle}>Enter the 6-digit DLT authentication code sent to +91 {phone}</Text>
+          </View>
 
-        <GlassCard style={styles.card}>
-          <PinInput
-            length={6}
-            value={otp}
-            onChange={(t) => setOtp(t.replace(/[^0-9]/g, ''))}
-            error={error}
-          />
+          <GlassCard style={styles.card}>
+            <PinInput
+              length={6}
+              value={otp}
+              onChange={(t) => setOtp(t.replace(/[^0-9]/g, ''))}
+              error={error}
+            />
 
-          <GlassButton
-            title="Verify & Authenticate"
-            onPress={handleVerify}
-            loading={loading}
-            style={styles.btn}
-          />
-        </GlassCard>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <GlassButton
+              title="Verify & Authenticate"
+              onPress={handleVerify}
+              loading={loading}
+              style={styles.btn}
+            />
+
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()}
+              style={styles.switchContainer}
+            >
+              <Text style={styles.switchText}>
+                Use a different number? <Text style={styles.switchLink}>Go Back</Text>
+              </Text>
+            </TouchableOpacity>
+          </GlassCard>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background
+    flex: 1
   },
   scroll: {
     flexGrow: 1,
@@ -122,5 +138,17 @@ const styles = StyleSheet.create({
   btn: {
     width: '100%',
     marginTop: 8
+  },
+  switchContainer: {
+    alignItems: 'center',
+    marginTop: 12
+  },
+  switchText: {
+    fontSize: 13,
+    color: colors.textSecondary
+  },
+  switchLink: {
+    color: colors.primary,
+    fontWeight: '700'
   }
 });

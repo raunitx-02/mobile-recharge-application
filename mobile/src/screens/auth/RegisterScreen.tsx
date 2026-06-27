@@ -10,17 +10,28 @@ import Toast from 'react-native-toast-message';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'PhoneLogin'>;
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
+export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+  const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [referredBy, setReferredBy] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSendOTP = async () => {
+  const handleRegister = async () => {
+    if (!name.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Required Field',
+        text2: 'Please enter your name'
+      });
+      return;
+    }
     if (phone.length !== 10) {
       Toast.show({
         type: 'error',
-        text1: 'Invalid Phone Number',
+        text1: 'Invalid Phone',
         text2: 'Please enter a valid 10-digit mobile number'
       });
       return;
@@ -28,20 +39,31 @@ export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
 
     setLoading(true);
     try {
+      // First register details on server (which saves the user info, password/auth is verified via OTP)
+      await authService.register({
+        name,
+        phone,
+        email: email.trim() || undefined,
+        password: 'defaultPassword123' // Default password since OTP handles actual login securely
+      });
+      
+      // Immediately send OTP to authenticate
       const res = await authService.sendOTP(phone);
       const serverOtp = res.data?.data?.otp;
+
       Toast.show({
         type: 'success',
-        text1: 'OTP Sent ⚡',
-        text2: serverOtp ? `[DEV MODE] Verification Code is ${serverOtp}` : `Verification code sent to +91 ${phone}`,
+        text1: 'Account Created 🎉',
+        text2: serverOtp ? `[DEV MODE] OTP is ${serverOtp}` : 'Verification code sent to your phone',
         visibilityTime: serverOtp ? 10000 : 4000
       });
+
       navigation.navigate('OTPVerify', { phone, devOtp: serverOtp });
     } catch (err: any) {
       Toast.show({
         type: 'error',
-        text1: 'Request Failed',
-        text2: err.response?.data?.message || 'Failed to send verification SMS'
+        text1: 'Registration Failed',
+        text2: err.response?.data?.message || 'Could not register account'
       });
     } finally {
       setLoading(false);
@@ -50,25 +72,30 @@ export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <LinearGradient
-      colors={['#E8EAF6', '#F5F5F7', '#E3F2FD']}
+      colors={['#E3F2FD', '#F5F5F7', '#E8F5E9']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.header}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>Æ</Text>
-            </View>
-            <Text style={styles.title}>Welcome to AetherPay</Text>
-            <Text style={styles.subtitle}>Enter your mobile number to sign in or get started.</Text>
+            <Text style={styles.title}>Join AetherPay</Text>
+            <Text style={styles.subtitle}>Create an account to start earning high commission slabs instantly.</Text>
           </View>
 
           <GlassCard style={styles.card}>
+            <GlassInput
+              label="Full Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="John Doe"
+              icon="👤"
+            />
+
             <GlassInput
               label="Mobile Number"
               value={phone}
@@ -78,20 +105,38 @@ export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
               maxLength={10}
               icon="📱"
             />
-            
-            <GlassButton 
-              title="Get Verification Code" 
-              onPress={handleSendOTP} 
+
+            <GlassInput
+              label="Email Address (Optional)"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="john@example.com"
+              keyboardType="email-address"
+              icon="✉️"
+            />
+
+            <GlassInput
+              label="Referral Code (Optional)"
+              value={referredBy}
+              onChangeText={setReferredBy}
+              placeholder="REF12345"
+              autoCapitalize="characters"
+              icon="🎁"
+            />
+
+            <GlassButton
+              title="Sign Up & Get Code"
+              onPress={handleRegister}
               loading={loading}
               style={styles.btn}
             />
 
             <TouchableOpacity 
-              onPress={() => navigation.navigate('Register')}
+              onPress={() => navigation.navigate('PhoneLogin')}
               style={styles.switchContainer}
             >
               <Text style={styles.switchText}>
-                Don't have an account? <Text style={styles.switchLink}>Sign Up</Text>
+                Already have an account? <Text style={styles.switchLink}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </GlassCard>
@@ -112,39 +157,20 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32
-  },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4
-  },
-  logoText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: colors.primary
+    marginBottom: 24
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
     color: colors.text,
-    letterSpacing: -0.5
+    letterSpacing: -0.8
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 18,
+    lineHeight: 20,
     paddingHorizontal: 20
   },
   card: {

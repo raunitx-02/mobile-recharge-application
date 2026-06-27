@@ -1,7 +1,8 @@
 export type AuthStackParamList = {
   Splash: undefined;
   PhoneLogin: undefined;
-  OTPVerify: { phone: string };
+  Register: undefined;
+  OTPVerify: { phone: string; devOtp?: string };
 };
 
 export type MainTabParamList = {

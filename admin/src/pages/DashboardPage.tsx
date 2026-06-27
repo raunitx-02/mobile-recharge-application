@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { dashboardService } from '../../services/admin.service';
-import { useAuthStore } from '../../store/auth.store';
-import { formatCurrency } from '../../utils/formatters';
+import { dashboardService } from '../services/admin.service';
+import { useAuthStore } from '../store/auth.store';
+import { formatCurrency } from '../utils/formatters';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);

@@ -10,10 +10,12 @@ const dbPassword = process.env.DB_PASSWORD || 'postgres';
 let sequelize;
 
 if (process.env.NODE_ENV === 'development' && process.env.USE_SQLITE === 'true') {
-  logger.info('Using SQLite in-memory database for local development and testing.');
+  const path = require('path');
+  const sqlitePath = path.join(__dirname, '../../aetherpay.sqlite');
+  logger.info(`Using SQLite database at file path: ${sqlitePath}`);
   sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: ':memory:',
+    storage: sqlitePath,
     logging: (msg) => logger.debug(msg)
   });
 } else {
