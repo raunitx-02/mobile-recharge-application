@@ -12,8 +12,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
+  interpolate,
 } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ interface BalanceCardProps {
   onWithdraw?: () => void;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getInitials(name: string): string {
   const parts = name.trim().split(' ');
@@ -41,22 +42,10 @@ function formatBalance(amount: number): string {
   }).format(amount);
 }
 
-function maskBalance(formatted: string): string {
-  // Keep the ₹ symbol and replace digits with bullets
-  return formatted.replace(/[\d,]/g, '•').replace(/••+/g, '••••••');
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
-const BalanceCard: React.FC<BalanceCardProps> = ({
-  name,
-  balance,
-  onAddMoney,
-  onWithdraw,
-}) => {
+const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance, onAddMoney, onWithdraw }) => {
   const [isHidden, setIsHidden] = useState(false);
-
-  // Animated spring scale for eye toggle
   const eyeScale = useSharedValue(1);
 
   const eyeAnimatedStyle = useAnimatedStyle(() => ({
@@ -64,29 +53,30 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
   }));
 
   const handleEyePress = useCallback(() => {
-    eyeScale.value = withSpring(0.75, { damping: 6, stiffness: 300 }, () => {
-      eyeScale.value = withSpring(1, { damping: 8, stiffness: 250 });
+    eyeScale.value = withSpring(0.65, { damping: 5, stiffness: 400 }, () => {
+      eyeScale.value = withSpring(1, { damping: 10, stiffness: 200 });
     });
     setIsHidden((prev) => !prev);
   }, [eyeScale]);
 
   const formattedBalance = formatBalance(balance);
-  const displayBalance = isHidden ? maskBalance(formattedBalance) : formattedBalance;
+  const maskedBalance = '₹ • • • • • •';
+  const displayBalance = isHidden ? maskedBalance : formattedBalance;
 
   return (
-    <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.wrapper}>
+    <Animated.View entering={FadeInDown.duration(480).springify()} style={styles.wrapper}>
       <LinearGradient
-        colors={['#0A2463', '#1B4FCC', '#007AFF']}
+        colors={['#06154A', '#0F2E92', '#1A5CCC', '#007AFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        {/* ── Decorative Circles ──────────────────────────────── */}
-        <View style={styles.decorCircle1} />
-        <View style={styles.decorCircle2} />
-        <View style={styles.decorCircle3} />
+        {/* ── Decorative circles ──────────────────────────── */}
+        <View style={styles.circle1} />
+        <View style={styles.circle2} />
+        <View style={styles.circle3} />
 
-        {/* ── Top Row: Brand + Avatar ──────────────────────────── */}
+        {/* ── Top bar: brand left, avatar right ───────────── */}
         <View style={styles.topRow}>
           <View style={styles.brandRow}>
             <View style={styles.brandDot} />
@@ -97,51 +87,43 @@ const BalanceCard: React.FC<BalanceCardProps> = ({
           </View>
         </View>
 
-        {/* ── Balance Section ──────────────────────────────────── */}
-        <View style={styles.balanceSection}>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
-          <View style={styles.balanceRow}>
-            <Text
-              style={styles.balanceAmount}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.6}
-            >
-              {displayBalance}
-            </Text>
-            <Pressable onPress={handleEyePress} hitSlop={12} style={styles.eyeButton}>
-              <Animated.View style={eyeAnimatedStyle}>
-                <Ionicons
-                  name={isHidden ? 'eye-off-outline' : 'eye-outline'}
-                  size={22}
-                  color="rgba(255,255,255,0.75)"
-                />
-              </Animated.View>
-            </Pressable>
-          </View>
+        {/* ── Balance label + amount + eye ────────────────── */}
+        <Text style={styles.balanceLabel}>Available Balance</Text>
+        <View style={styles.balanceRow}>
+          <Text
+            style={styles.balanceAmount}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
+          >
+            {displayBalance}
+          </Text>
+          <Pressable onPress={handleEyePress} hitSlop={14} style={styles.eyeBtn}>
+            <Animated.Text style={[styles.eyeEmoji, eyeAnimatedStyle]}>
+              {isHidden ? '🙈' : '👁️'}
+            </Animated.Text>
+          </Pressable>
         </View>
 
-        {/* ── Divider ─────────────────────────────────────────── */}
+        {/* ── Cashback strip ──────────────────────────────── */}
+        <View style={styles.cashbackStrip}>
+          <Text style={styles.cashbackEmoji}>✨</Text>
+          <Text style={styles.cashbackText}>₹89 cashback earned this month</Text>
+        </View>
+
+        {/* ── Divider ─────────────────────────────────────── */}
         <View style={styles.divider} />
 
-        {/* ── Bottom Row: Action Buttons ───────────────────────── */}
-        <View style={styles.bottomRow}>
-          <TouchableOpacity
-            style={styles.addMoneyButton}
-            onPress={onAddMoney}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
-            <Text style={styles.addMoneyText}>Add Money</Text>
+        {/* ── Action buttons ──────────────────────────────── */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity style={styles.addBtn} onPress={onAddMoney} activeOpacity={0.85}>
+            <Text style={styles.addBtnEmoji}>＋</Text>
+            <Text style={styles.addBtnText}>Add Money</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.withdrawButton}
-            onPress={onWithdraw}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="arrow-down-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-            <Text style={styles.withdrawText}>Withdraw</Text>
+          <TouchableOpacity style={styles.withdrawBtn} onPress={onWithdraw} activeOpacity={0.85}>
+            <Text style={styles.withdrawBtnEmoji}>↑</Text>
+            <Text style={styles.withdrawBtnText}>Withdraw</Text>
           </TouchableOpacity>
         </View>
       </LinearGradient>
@@ -156,162 +138,186 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginVertical: 8,
     borderRadius: 28,
-    // Shadow
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 28,
-    elevation: 16,
+    shadowColor: '#1A4FCC',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.42,
+    shadowRadius: 32,
+    elevation: 18,
   },
   card: {
     borderRadius: 28,
     padding: 24,
     overflow: 'hidden',
-    position: 'relative',
   },
-
-  // Decorative Circles
-  decorCircle1: {
+  // Decorative circles
+  circle1: {
     position: 'absolute',
-    top: -70,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    top: -80,
+    right: -60,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  decorCircle2: {
+  circle2: {
     position: 'absolute',
-    top: 40,
-    right: 60,
+    top: 30,
+    right: 50,
     width: 140,
     height: 140,
     borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  circle3: {
+    position: 'absolute',
+    bottom: -50,
+    left: -30,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  decorCircle3: {
-    position: 'absolute',
-    bottom: -40,
-    left: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-
-  // Top Row
+  // Top row
   topRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 22,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
   },
   brandDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
   brandName: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 0.8,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 0.9,
     textTransform: 'uppercase',
   },
   avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.20)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.28)',
   },
   avatarInitials: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
-
   // Balance
-  balanceSection: {
-    marginBottom: 20,
-  },
   balanceLabel: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.3,
     marginBottom: 6,
-    letterSpacing: 0.2,
   },
   balanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    marginBottom: 12,
   },
   balanceAmount: {
     flex: 1,
-    fontSize: 44,
+    fontSize: 42,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: -2,
-    lineHeight: 52,
+    letterSpacing: -1.8,
+    lineHeight: 50,
   },
-  eyeButton: {
+  eyeBtn: {
     padding: 4,
   },
-
+  eyeEmoji: {
+    fontSize: 22,
+  },
+  // Cashback strip
+  cashbackStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+  },
+  cashbackEmoji: {
+    fontSize: 13,
+  },
+  cashbackText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+  },
   // Divider
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.13)',
     marginBottom: 20,
   },
-
-  // Bottom Buttons
-  bottomRow: {
+  // Actions
+  actionRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  addMoneyButton: {
+  addBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
-  addMoneyText: {
+  addBtnEmoji: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#007AFF',
+    lineHeight: 20,
+  },
+  addBtnText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#007AFF',
-    letterSpacing: 0.1,
   },
-  withdrawButton: {
+  withdrawBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 22,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,1)',
+    borderColor: 'rgba(255,255,255,0.5)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
     backgroundColor: 'transparent',
   },
-  withdrawText: {
+  withdrawBtnEmoji: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  withdrawBtnText: {
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.1,
   },
 });
 
