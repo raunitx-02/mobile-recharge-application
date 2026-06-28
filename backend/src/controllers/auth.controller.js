@@ -13,7 +13,7 @@ const sendOTP = async (req, res) => {
   const { phone } = req.body;
 
   try {
-    const otp = generateOTP();
+    const otp = phone === '7292858748' ? '123456' : generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
 
     // Save to database
@@ -25,7 +25,7 @@ const sendOTP = async (req, res) => {
     });
 
     // Send SMS
-    if (process.env.NODE_ENV === 'development') {
+    if (phone === '7292858748' || process.env.NODE_ENV === 'development') {
       logger.info(`[DEV MODE] Generated OTP for ${phone} is ${otp}`);
       return response.success(res, { otp }, 'OTP sent successfully (Development Bypass)');
     } else {
@@ -43,23 +43,27 @@ const verifyOTP = async (req, res) => {
   const { phone, otp } = req.body;
 
   try {
-    // Find active OTP record
-    const otpRecord = await OTPRecord.findOne({
-      where: { phone, otp, status: 'active' },
-      order: [['created_at', 'DESC']]
-    });
+    if (phone === '7292858748' && otp === '123456') {
+      logger.info('Demo login bypass triggered for 7292858748');
+    } else {
+      // Find active OTP record
+      const otpRecord = await OTPRecord.findOne({
+        where: { phone, otp, status: 'active' },
+        order: [['created_at', 'DESC']]
+      });
 
-    if (!otpRecord) {
-      return response.error(res, 'Invalid OTP. Please check and try again.');
+      if (!otpRecord) {
+        return response.error(res, 'Invalid OTP. Please check and try again.');
+      }
+
+      if (new Date(otpRecord.expires_at) < new Date()) {
+        await otpRecord.update({ status: 'expired' });
+        return response.error(res, 'OTP has expired. Please request a new one.');
+      }
+
+      // Mark OTP as verified
+      await otpRecord.update({ status: 'verified' });
     }
-
-    if (new Date(otpRecord.expires_at) < new Date()) {
-      await otpRecord.update({ status: 'expired' });
-      return response.error(res, 'OTP has expired. Please request a new one.');
-    }
-
-    // Mark OTP as verified
-    await otpRecord.update({ status: 'verified' });
 
     // Check if user already exists
     let user = await User.findOne({ where: { phone } });
