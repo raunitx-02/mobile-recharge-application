@@ -16,8 +16,8 @@ export const HomeScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const mockBanners = [
-    { id: '1', title: 'Earn 3.50% Slab Commission', subtitle: 'Applicable globally on all major telecom operator recharges.', color1: '#007AFF', color2: '#5AC8FA' },
-    { id: '2', title: '50% Flat Utility Bill Promo', subtitle: 'Pay first electricity bill via BBPS and check out instant cashback.', color1: '#34C759', color2: '#30B0C7' }
+    { id: '1', title: 'Flat ₹50 Wallet Cashback', subtitle: 'Applicable on your first electricity or water bill payment this month.', color1: '#007AFF', color2: '#5AC8FA' },
+    { id: '2', title: 'Refer & Earn ₹100 Instantly', subtitle: 'Invite your friends to pay bills and earn unlimited cash back credits.', color1: '#34C759', color2: '#30B0C7' }
   ];
 
   const fetchDashboardData = async () => {
@@ -60,7 +60,7 @@ export const HomeScreen: React.FC = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.welcome}>Welcome Back</Text>
-          <Text style={styles.name}>{user?.name || 'Agent'} 👋</Text>
+          <Text style={styles.name}>{user?.name || 'User'} 👋</Text>
         </View>
         <TouchableOpacity style={styles.bell}>
           <Text style={styles.bellText}>🔔</Text>
@@ -68,7 +68,7 @@ export const HomeScreen: React.FC = () => {
       </View>
 
       <BalanceCard 
-        name={user?.name || 'Agent'} 
+        name={user?.name || 'User'} 
         balance={balance} 
       />
 
