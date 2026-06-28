@@ -22,25 +22,22 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BAR_HORIZ_MARGIN = 24;
-const BAR_WIDTH = SCREEN_WIDTH - BAR_HORIZ_MARGIN * 2;
+const BAR_WIDTH = SCREEN_WIDTH - 48;
 const BAR_HEIGHT = 68;
-const PILL_H = 40;
-const PILL_PADDING_H = 14;
 
 const TAB_CONFIG: Record<
   string,
   { icon: string; label: string; color: string; bg: string }
 > = {
-  HomeTab:     { icon: '🏠', label: 'Home',     color: '#1D6FEB', bg: 'rgba(29,111,235,0.11)' },
-  RechargeTab: { icon: '⚡', label: 'Recharge', color: '#E07B00', bg: 'rgba(224,123,0,0.11)' },
-  WalletTab:   { icon: '💳', label: 'Wallet',   color: '#1AAF5D', bg: 'rgba(26,175,93,0.11)' },
-  HistoryTab:  { icon: '🕐', label: 'History',  color: '#5856D6', bg: 'rgba(88,86,214,0.11)' },
-  ProfileTab:  { icon: '👤', label: 'Profile',  color: '#D92D5F', bg: 'rgba(217,45,95,0.11)' },
+  HomeTab:     { icon: '🏠', label: 'Home',     color: '#1D6FEB', bg: 'rgba(29,111,235,0.12)' },
+  RechargeTab: { icon: '⚡', label: 'Recharge', color: '#D97B00', bg: 'rgba(217,123,0,0.12)'  },
+  WalletTab:   { icon: '💳', label: 'Wallet',   color: '#1AAF5D', bg: 'rgba(26,175,93,0.12)'  },
+  HistoryTab:  { icon: '🕐', label: 'History',  color: '#5856D6', bg: 'rgba(88,86,214,0.12)'  },
+  ProfileTab:  { icon: '👤', label: 'Profile',  color: '#D92D5F', bg: 'rgba(217,45,95,0.12)'  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Single tab item — self-contained pill with NO overflow outside its bounds
+// Single Tab Item
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TabItem = ({
@@ -53,43 +50,27 @@ const TabItem = ({
   onPress: () => void;
 }) => {
   const cfg = TAB_CONFIG[route.name] ?? {
-    icon: '•',
+    icon: '·',
     label: route.name,
     color: '#007AFF',
-    bg: 'rgba(0,122,255,0.1)',
+    bg: 'rgba(0,122,255,0.12)',
   };
 
-  // Animate icon scale
   const scale = useSharedValue(1);
-  // Animate label width (0 → 1)
-  const labelProg = useSharedValue(isFocused ? 1 : 0);
-  // Animate pill background opacity
-  const pillOpacity = useSharedValue(isFocused ? 1 : 0);
+  const pillBg = useSharedValue(0);
 
   React.useEffect(() => {
-    scale.value = withSpring(isFocused ? 1.15 : 1, {
-      damping: 16,
-      stiffness: 300,
-    });
-    labelProg.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
-    pillOpacity.value = withTiming(isFocused ? 1 : 0, { duration: 180 });
+    scale.value = withSpring(isFocused ? 1.12 : 1, { damping: 16, stiffness: 280 });
+    pillBg.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
   }, [isFocused]);
 
-  const iconAnimStyle = useAnimatedStyle(() => ({
+  const iconAnim = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
-  const labelAnimStyle = useAnimatedStyle(() => ({
-    opacity: labelProg.value,
-    // Clamp maxWidth: 0 when inactive → natural size when active
-    // This avoids any layout overflow
-    maxWidth: labelProg.value * 80,
-    marginLeft: labelProg.value * 5,
-    overflow: 'hidden' as const,
-  }));
-
-  const pillAnimStyle = useAnimatedStyle(() => ({
-    opacity: pillOpacity.value,
+  const pillAnim = useAnimatedStyle(() => ({
+    opacity: pillBg.value,
+    transform: [{ scale: 0.92 + pillBg.value * 0.08 }],
   }));
 
   return (
@@ -101,29 +82,31 @@ const TabItem = ({
       style={styles.tabTouch}
       activeOpacity={1}
     >
-      {/* The pill is INSIDE the touch area, flex-contained, no absolute overflow */}
+      {/* Pill — always rendered but opacity-animated. Fixed width by content. */}
       <Animated.View
         style={[
           styles.pill,
           { backgroundColor: cfg.bg },
-          pillAnimStyle,
+          pillAnim,
+          // Position absolute so inactive tab takes zero flex space
+          StyleSheet.absoluteFillObject,
+          { position: 'absolute', left: 6, right: 6, top: '50%', marginTop: -20, height: 40, borderRadius: 20 },
         ]}
-      >
-        {/* Icon */}
-        <Animated.Text style={[styles.icon, iconAnimStyle]}>
+      />
+
+      {/* Content always on top */}
+      <View style={styles.tabContent}>
+        <Animated.Text style={[styles.tabIcon, iconAnim]}>
           {cfg.icon}
         </Animated.Text>
+        {isFocused && (
+          <Text style={[styles.tabLabel, { color: cfg.color }]} numberOfLines={1}>
+            {cfg.label}
+          </Text>
+        )}
+      </View>
 
-        {/* Label — animates width from 0 to natural size */}
-        <Animated.Text
-          style={[styles.label, { color: cfg.color }, labelAnimStyle]}
-          numberOfLines={1}
-        >
-          {cfg.label}
-        </Animated.Text>
-      </Animated.View>
-
-      {/* Dot indicator under icon */}
+      {/* Active dot */}
       {isFocused && (
         <View style={[styles.dot, { backgroundColor: cfg.color }]} />
       )}
@@ -132,7 +115,7 @@ const TabItem = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab bar container
+// Tab Bar Container
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
@@ -140,10 +123,12 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
-  const bottomOffset = Math.max(insets.bottom + 10, 22);
+  const bottom = Math.max(insets.bottom + 10, 22);
 
   return (
-    <View style={[styles.wrapper, { bottom: bottomOffset }]}>
+    // Shadow wrapper — must NOT have overflow:hidden for shadows to work
+    <View style={[styles.shadow, { bottom }]}>
+      {/* Visible bar — clips rounded corners with overflow:hidden but only for bg */}
       <View style={styles.bar}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
@@ -176,56 +161,67 @@ export const FloatingTabBar: React.FC<BottomTabBarProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  wrapper: {
+  // Shadow wrapper (no overflow:hidden — shadows need this)
+  shadow: {
     position: 'absolute',
     alignSelf: 'center',
     width: BAR_WIDTH,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+      },
+      android: { elevation: 18 },
+    }),
   },
+
+  // Actual bar (white background, rounded)
   bar: {
     height: BAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     backgroundColor: '#FFFFFF',
     borderRadius: BAR_HEIGHT / 2,
-    // Clip children so nothing overflows the rounded pill bar
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,0,0,0.08)',
+    // overflow hidden only here for rounding — shadows on parent
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.13,
-        shadowRadius: 30,
-      },
-      android: { elevation: 20 },
-    }),
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
   },
+
+  // Each tab gets equal flex space
   tabTouch: {
     flex: 1,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    // No overflow possible since parent has overflow:'hidden'
   },
+
+  // Pill background (absolute, contained within tabTouch)
   pill: {
+    borderRadius: 20,
+  },
+
+  // Icon + label row, sits above the pill
+  tabContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    height: PILL_H,
-    paddingHorizontal: PILL_PADDING_H,
-    borderRadius: PILL_H / 2,
-    // Self-sizing — no absolute position, no negative margins
+    gap: 5,
+    paddingHorizontal: 10,
   },
-  icon: {
-    fontSize: 20,
+
+  tabIcon: {
+    fontSize: 21,
   },
-  label: {
+
+  tabLabel: {
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: -0.3,
   },
+
+  // Small dot below the tab
   dot: {
     position: 'absolute',
     bottom: 7,
