@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme';
-import { StatusBadge } from './StatusBadge';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface TransactionItemProps {
   operator: string;
@@ -15,6 +18,70 @@ interface TransactionItemProps {
   onPress?: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+interface IconConfig {
+  bg: string;
+  emoji: string;
+}
+
+const getIconConfig = (operator: string, isCredit: boolean): IconConfig => {
+  const op = operator.toLowerCase();
+  if (op.includes('jio') || op.includes('mobile') || op.includes('prepaid') || op.includes('postpaid')) {
+    return { bg: '#EAF3FF', emoji: '\ud83d\udcf1' };
+  }
+  if (op.includes('dth') || op.includes('play') || op.includes('dish') || op.includes('airtel')) {
+    return { bg: '#FFF6EA', emoji: '\ud83d\udce1' };
+  }
+  if (op.includes('elect') || op.includes('power') || op.includes('bses') || op.includes('msedcl')) {
+    return { bg: '#FFF0EA', emoji: '\u26a1' };
+  }
+  if (op.includes('water') || op.includes('jal')) {
+    return { bg: '#EAF3FF', emoji: '\ud83d\udca7' };
+  }
+  if (op.includes('gas') || op.includes('igl') || op.includes('mgl')) {
+    return { bg: '#FFEAEA', emoji: '\ud83d\udd25' };
+  }
+  if (op.includes('broad') || op.includes('fiber') || op.includes('internet')) {
+    return { bg: '#EAFFF0', emoji: '\ud83c\udf10' };
+  }
+  if (op.includes('fast') || op.includes('nhai') || op.includes('tag')) {
+    return { bg: '#FFF6EA', emoji: '\ud83d\udee3\ufe0f' };
+  }
+  if (op.includes('rent') || op.includes('society') || op.includes('housing')) {
+    return { bg: '#F0EAFF', emoji: '\ud83c\udfe0' };
+  }
+  if (isCredit) {
+    return { bg: '#EAFFF0', emoji: '\ud83d\udcb0' };
+  }
+  return { bg: '#F5F5F5', emoji: '\ud83d\udd27' };
+};
+
+interface StatusConfig {
+  bg: string;
+  textColor: string;
+  label: string;
+}
+
+const getStatusConfig = (status: TransactionItemProps['status']): StatusConfig => {
+  switch (status) {
+    case 'success':
+      return { bg: '#EAFFF0', textColor: '#34C759', label: '\u2022 Success' };
+    case 'pending':
+      return { bg: '#FFF6EA', textColor: '#FF9500', label: '\u2022 Pending' };
+    case 'failed':
+      return { bg: '#FFEAEA', textColor: '#FF3B30', label: '\u2022 Failed' };
+    case 'processing':
+      return { bg: '#EAF3FF', textColor: '#007AFF', label: '\u2022 Processing' };
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export const TransactionItem: React.FC<TransactionItemProps> = ({
   operator,
   accountNo,
@@ -23,178 +90,219 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   status,
   date,
   txnId = `TXN-${Math.floor(Math.random() * 100000000)}`,
-  onPress
+  onPress,
 }) => {
   const [expanded, setExpanded] = useState(false);
+
   const isDebit = type === 'debit';
+  const isCredit = type === 'credit';
   const displayAmount = `${isDebit ? '-' : '+'} ${formatCurrency(amount)}`;
+  const amountColor = isCredit ? '#34C759' : '#1C1C1E';
+
+  const { bg: iconBg, emoji } = getIconConfig(operator, isCredit);
+  const statusConfig = getStatusConfig(status);
+
+  // Operator code: uppercase of first word
+  const operatorCode = operator.split(' ')[0].toUpperCase();
 
   const handlePress = () => {
     if (onPress) {
       onPress();
     } else {
-      setExpanded(!expanded);
+      setExpanded((prev) => !prev);
     }
   };
 
-  const getIcon = () => {
-    const cleanOp = operator.toLowerCase();
-    if (cleanOp.includes('jio')) return '📱';
-    if (cleanOp.includes('airtel')) return '📶';
-    if (cleanOp.includes('dth')) return '📡';
-    if (cleanOp.includes('elect')) return '⚡';
-    if (cleanOp.includes('water')) return '💧';
-    if (cleanOp.includes('gas')) return '🔥';
-    if (cleanOp.includes('broad')) return '🌐';
-    if (cleanOp.includes('fast')) return '🚗';
-    if (cleanOp.includes('rent')) return '🏠';
-    return isDebit ? '⚡' : '💰';
-  };
-
   return (
-    <View style={styles.outerContainer}>
-      <TouchableOpacity 
-        style={[styles.container, expanded && styles.containerExpanded]} 
+    <View style={styles.container}>
+      {/* ── MAIN ROW ── */}
+      <TouchableOpacity
+        style={styles.mainRow}
         onPress={handlePress}
-        activeOpacity={0.8}
+        activeOpacity={0.85}
       >
-        <View style={styles.left}>
-          <View style={[styles.avatarCircle, { backgroundColor: isDebit ? 'rgba(0, 122, 255, 0.08)' : 'rgba(52, 199, 89, 0.08)' }]}>
-            <Text style={[styles.avatarText, { color: isDebit ? colors.primary : colors.success }]}>
-              {getIcon()}
-            </Text>
-          </View>
-          <View style={styles.details}>
-            <Text style={styles.operator} numberOfLines={1}>{operator}</Text>
-            <Text style={styles.accountNo} numberOfLines={1}>{accountNo}</Text>
-            <Text style={styles.date}>{formatDate(date)}</Text>
-          </View>
+        {/* Left: icon square */}
+        <View style={[styles.iconSquare, { backgroundColor: iconBg }]}>
+          <Text style={styles.iconEmoji}>{emoji}</Text>
         </View>
 
-        <View style={styles.right}>
-          <Text style={[styles.amount, { color: isDebit ? colors.text : colors.success }]}>
-            {displayAmount}
+        {/* Center: details */}
+        <View style={styles.centerBlock}>
+          <Text style={styles.operatorText} numberOfLines={1}>
+            {operator}
           </Text>
-          <StatusBadge status={status} />
+          <Text style={styles.accountNoText} numberOfLines={1}>
+            {accountNo}
+          </Text>
+          <Text style={styles.dateText}>{formatDate(date)}</Text>
+        </View>
+
+        {/* Right: amount + status badge */}
+        <View style={styles.rightBlock}>
+          <Text style={[styles.amountText, { color: amountColor }]}>{displayAmount}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusConfig.bg }]}>
+            <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
+              {statusConfig.label}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
 
+      {/* ── EXPANDED SECTION ── */}
       {expanded && (
-        <View style={styles.detailsBlock}>
+        <View style={styles.expandedSection}>
+          {/* Divider */}
           <View style={styles.divider} />
-          <View style={styles.detailsRow}>
+
+          {/* Detail rows */}
+          <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Transaction ID</Text>
-            <Text style={styles.detailVal}>{txnId}</Text>
+            <Text style={styles.detailValue}>{txnId}</Text>
           </View>
-          <View style={styles.detailsRow}>
-            <Text style={styles.detailLabel}>Payment Method</Text>
-            <Text style={styles.detailVal}>{isDebit ? 'Wallet Balance' : 'Gateway / UPI'}</Text>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Payment Mode</Text>
+            <Text style={styles.detailValue}>Wallet Balance</Text>
           </View>
-          <View style={styles.detailsRow}>
-            <Text style={styles.detailLabel}>Status</Text>
-            <Text style={[styles.detailVal, { color: status === 'success' ? colors.success : colors.warning }]}>
-              {status.toUpperCase()}
-            </Text>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Operator Code</Text>
+            <Text style={styles.detailValue}>{operatorCode}</Text>
           </View>
+
+          {/* Raise dispute (only on failed) */}
+          {status === 'failed' && (
+            <TouchableOpacity
+              style={styles.disputeBtn}
+              onPress={() => {}}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.disputeText}>Raise Dispute \u2192</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
     </View>
   );
 };
 
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  outerContainer: {
-    marginHorizontal: 16,
-    marginVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.80)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-    overflow: 'hidden'
-  },
   container: {
+    marginHorizontal: 20,
+    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+
+  // Main row
+  mainRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16
+    padding: 16,
   },
-  containerExpanded: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)'
-  },
-  left: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 12
-  },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+
+  // Left icon
+  iconSquare: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  avatarText: {
-    fontSize: 18
+  iconEmoji: {
+    fontSize: 24,
   },
-  details: {
+
+  // Center
+  centerBlock: {
     flex: 1,
-    justifyContent: 'center'
+    marginLeft: 14,
   },
-  operator: {
+  operatorText: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.text,
-    letterSpacing: -0.2
+    color: '#1C1C1E',
   },
-  accountNo: {
+  accountNoText: {
     fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2
+    color: '#8E8E93',
+    marginTop: 3,
   },
-  date: {
-    fontSize: 10,
-    color: colors.textTertiary,
-    marginTop: 4
+  dateText: {
+    fontSize: 11,
+    color: '#C7C7CC',
+    marginTop: 2,
   },
-  right: {
+
+  // Right
+  rightBlock: {
     alignItems: 'flex-end',
-    gap: 6
+    gap: 6,
   },
-  amount: {
-    fontSize: 15,
+  amountText: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: -0.5
+  },
+
+  // Expanded section
+  expandedSection: {
+    paddingBottom: 12,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(60, 60, 67, 0.08)',
+    backgroundColor: 'rgba(60,60,67,0.08)',
     marginHorizontal: 16,
-    marginBottom: 12
+    marginBottom: 4,
   },
-  detailsBlock: {
-    paddingBottom: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)'
-  },
-  detailsRow: {
+  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    marginVertical: 4
+    paddingVertical: 6,
   },
   detailLabel: {
-    fontSize: 11,
-    color: colors.textTertiary,
-    fontWeight: '600'
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#8E8E93',
   },
-  detailVal: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '700'
-  }
+  detailValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+
+  // Dispute button
+  disputeBtn: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 2,
+  },
+  disputeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FF3B30',
+  },
 });
