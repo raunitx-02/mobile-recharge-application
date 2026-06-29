@@ -1,68 +1,89 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { adminApi } from '../../services/api';
 import { useAuthStore } from '../../store/auth.store';
-import { authService } from '../../services/admin.service';
 
-export default function LoginPage() {
+const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { login } = useAuthStore();
+  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    if (!email || !password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
 
+    setLoading(true);
     try {
-      const res = await authService.adminLogin({ email, password });
-      // Stub basic admin layout details since it might lack nested joins on local mock tests
-      const adminDetails = res.user || { name: 'Admin', email: email, role: { name: 'SuperAdmin', permissions: ['*'] } };
-      setAuth(res.accessToken, adminDetails);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Invalid credentials or connection error');
+      const { data } = await adminApi.login(email, password);
+      login(data.token, data.admin);
+      toast.success('Login successful!');
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Login failed. Invalid credentials.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2 className="login-title">OptionsPay Admin</h2>
-        <p className="login-subtitle">Sign in to manage carrier configurations and transaction audits.</p>
-        
-        {error && <div className="login-error">{error}</div>}
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'var(--bg)',
+      backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(108,60,225,0.1) 0%, transparent 50%)'
+    }}>
+      <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '40px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>💳</div>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px' }}>OptionsPay</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Admin Console</p>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email Address</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+        <form onSubmit={handleLogin} className="flex-col">
+          <div className="input-group">
+            <label className="input-label">Email Address</label>
+            <input
+              type="email"
+              className="input-field"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@optionspay.in"
-              required 
+              required
             />
           </div>
 
-          <div className="form-group">
-            <label>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <label className="input-label">Password</label>
+            <input
+              type="password"
+              className="input-field"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required 
+              required
             />
           </div>
 
-          <button type="submit" disabled={loading} className="login-btn">
-            {loading ? 'Authenticating...' : 'Secure Sign In'}
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            disabled={loading}
+            style={{ width: '100%', opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
       </div>
     </div>
   );
-}
+};
+
+export default LoginPage;

@@ -1,33 +1,32 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-interface Admin {
+export interface Admin {
   id: string;
   name: string;
   email: string;
-  role: {
-    name: string;
-    permissions: string[];
-  };
+  role: string;
 }
 
-interface AuthState {
+interface AuthStore {
   token: string | null;
   admin: Admin | null;
   isAuthenticated: boolean;
-  setAuth: (token: string, admin: Admin) => void;
-  clearAuth: () => void;
+  login: (token: string, admin: Admin) => void;
+  logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem('admin_token'),
-  admin: null,
-  isAuthenticated: !!localStorage.getItem('admin_token'),
-  setAuth: (token, admin) => {
-    localStorage.setItem('admin_token', token);
-    set({ token, admin, isAuthenticated: true });
-  },
-  clearAuth: () => {
-    localStorage.removeItem('admin_token');
-    set({ token: null, admin: null, isAuthenticated: false });
-  }
-}));
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      token: null,
+      admin: null,
+      isAuthenticated: false,
+      login: (token, admin) => set({ token, admin, isAuthenticated: true }),
+      logout: () => set({ token: null, admin: null, isAuthenticated: false }),
+    }),
+    {
+      name: 'op_admin_auth',
+    }
+  )
+);
