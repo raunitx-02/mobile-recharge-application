@@ -1,3 +1,4 @@
+require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { Role, AdminUser, Operator, ApiConfig, Commission, Banner, Offer, Coupon, sequelize } = require('../models');
 const { encrypt } = require('../utils/encryption');
