@@ -12,32 +12,30 @@ const crypto = require('crypto');
 const sendOTP = async (req, res) => {
   const { phone } = req.body;
 
+  if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+    return response.error(res, 'Please enter a valid 10-digit mobile number', 400);
+  }
+
   try {
-    const otp = phone === '7292858748' ? '123456' : generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Save to database
-    await OTPRecord.create({
-      phone,
-      otp,
-      expires_at: expiresAt,
-      status: 'active'
-    });
+    // Invalidate any previous active OTPs for this number
+    await OTPRecord.update({ status: 'expired' }, { where: { phone, status: 'active' } });
 
-    // Send SMS
-    const bypassDev = (phone === '7292858748' || process.env.NODE_ENV === 'development') && process.env.FORCE_LIVE_SMS !== 'true';
-    if (bypassDev) {
-      logger.info(`[DEV MODE] Generated OTP for ${phone} is ${otp}`);
-      return response.success(res, { otp }, 'OTP sent successfully (Development Bypass)');
-    } else {
-      await fast2smsService.sendOTP(phone, otp);
-      return response.success(res, null, 'OTP sent successfully');
-    }
+    // Save new OTP
+    await OTPRecord.create({ phone, otp, expires_at: expiresAt, status: 'active' });
+
+    // Always send real SMS
+    await fast2smsService.sendOTP(phone, otp);
+    logger.info(`OTP sent to ${phone}`);
+    return response.success(res, null, 'OTP sent successfully');
   } catch (err) {
-    logger.error('sendOTP error:', err);
+    logger.error('sendOTP error:', err.message);
     return response.error(res, 'Failed to send OTP. Please try again.', 500);
   }
 };
+
 
 // POST /verify-otp
 const verifyOTP = async (req, res) => {

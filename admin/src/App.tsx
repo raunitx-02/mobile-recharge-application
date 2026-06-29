@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 import AdminLayout from './components/AdminLayout';
@@ -19,7 +19,7 @@ import SettingsPage from './pages/SettingsPage';
 
 const App: React.FC = () => {
   return (
-    <BrowserRouter basename="/admin">
+    <HashRouter>
       <Toaster
         position="top-right"
         toastOptions={{
@@ -51,7 +51,7 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 };
 
