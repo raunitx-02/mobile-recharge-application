@@ -10,6 +10,7 @@ const offerRoutes = require('./offer.routes');
 const notificationRoutes = require('./notification.routes');
 const profileRoutes = require('./profile.routes');
 const adminRoutes = require('./admin');
+const kwikapiRoutes = require('./kwikapi.routes');
 
 // Bind User flows
 router.use('/auth', authRoutes);
@@ -20,6 +21,9 @@ router.use('/transactions', transactionRoutes);
 router.use('/offers', offerRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/profile', profileRoutes);
+
+// KwikAPI Webhook Callback (transaction status updates from KwikAPI)
+router.use('/kwikapi', kwikapiRoutes);
 
 // Bind Admin flow
 router.use('/admin', adminRoutes);
