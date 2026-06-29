@@ -1,141 +1,98 @@
 const { User, Transaction, WalletTransaction, sequelize } = require('../../models');
-const walletService = require('../../services/wallet.service');
 const response = require('../../utils/response');
-const { getPagination, getPagingData } = require('../../utils/pagination');
 const { Op } = require('sequelize');
 
-// GET /users?page=&search=&status=
+// GET /admin/users
 const getUsers = async (req, res) => {
-  const { page, limit, search, status } = req.query;
-
+  const { page = 1, limit = 20, search, status } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
   try {
-    const { limit: l, offset } = getPagination(page, limit);
-
-    const whereClause = {};
-    if (status) {
-      whereClause.status = status;
-    }
+    const where = {};
+    if (status && status !== 'all') where.status = status;
     if (search) {
-      whereClause([Op.or]) = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { phone: { [Op.iLike]: `%${search}%` } },
-        { email: { [Op.iLike]: `%${search}%` } }
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } }
       ];
     }
-
-    const users = await User.findAndCountAll({
-      where: whereClause,
-      limit: l,
+    const { count, rows } = await User.findAndCountAll({
+      where,
+      limit: parseInt(limit),
       offset,
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      attributes: { exclude: ['password_hash', 'refresh_token'] }
     });
-
-    const paginatedResult = getPagingData(users, page, l);
-    return response.paginated(res, paginatedResult.items, {
-      totalItems: paginatedResult.totalItems,
-      totalPages: paginatedResult.totalPages,
-      currentPage: paginatedResult.currentPage
-    }, 'Users retrieved');
+    return response.success(res, { users: rows, total: count, page: parseInt(page) }, 'Users retrieved');
   } catch (err) {
-    return response.error(res, 'Failed to fetch users list', 500);
+    console.error('getUsers error:', err);
+    return response.error(res, 'Failed to fetch users', 500);
   }
 };
 
-// GET /users/:id
+// GET /admin/users/:id
 const getUserDetail = async (req, res) => {
-  const { id } = req.params;
-
   try {
-    const user = await User.findByPk(id);
-    if (!user) {
-      return response.error(res, 'User not found', 404);
-    }
-    return response.success(res, user, 'User details retrieved');
+    const user = await User.findByPk(req.params.id, {
+      attributes: { exclude: ['password_hash', 'refresh_token'] },
+      include: [{ model: Transaction, as: 'transactions', limit: 10, order: [['created_at', 'DESC']] }]
+    });
+    if (!user) return response.error(res, 'User not found', 404);
+    return response.success(res, user, 'User details');
   } catch (err) {
-    return response.error(res, 'Failed to fetch user details', 500);
+    return response.error(res, 'Failed to fetch user', 500);
   }
 };
 
-// PUT /users/:id/status
+// PATCH /admin/users/:id/status
 const updateUserStatus = async (req, res) => {
-  const { id } = req.params;
   const { status } = req.body;
-
+  if (!['active', 'blocked', 'inactive'].includes(status))
+    return response.error(res, 'Invalid status', 400);
   try {
-    const user = await User.findByPk(id);
-    if (!user) {
-      return response.error(res, 'User not found', 404);
-    }
-
-    await user.update({ status });
-    return response.success(res, user, `User status updated to ${status}`);
+    await User.update({ status }, { where: { id: req.params.id } });
+    return response.success(res, null, `User ${status}`);
   } catch (err) {
-    return response.error(res, 'Failed to update user status', 500);
+    return response.error(res, 'Failed to update status', 500);
   }
 };
 
-// PUT /users/:id/wallet
+// POST /admin/users/:id/wallet
 const adjustUserWallet = async (req, res) => {
-  const { id } = req.params;
-  const { type, amount, remark } = req.body;
-  const adminId = req.adminUser.id;
+  const { type, amount, reason } = req.body;
+  if (!amount || amount <= 0) return response.error(res, 'Invalid amount', 400);
 
-  const dbTxn = await sequelize.transaction();
-
+  const t = await sequelize.transaction();
   try {
-    let creditResult;
-    const refId = `MANUAL_${Date.now()}`;
+    const user = await User.findByPk(req.params.id, { transaction: t });
+    if (!user) { await t.rollback(); return response.error(res, 'User not found', 404); }
 
-    if (type === 'credit') {
-      creditResult = await walletService.creditWallet(
-        id,
-        amount,
-        refId,
-        'manual_adjustment',
-        `Admin Adjust (Credit): ${remark}`,
-        dbTxn
-      );
-    } else if (type === 'debit') {
-      creditResult = await walletService.debitWallet(
-        id,
-        amount,
-        refId,
-        'manual_adjustment',
-        `Admin Adjust (Debit): ${remark}`,
-        dbTxn
-      );
+    const currentBalance = parseFloat(user.wallet_balance || 0);
+    const amt = parseFloat(amount);
+    const newBalance = type === 'credit' ? currentBalance + amt : currentBalance - amt;
+
+    if (newBalance < 0) { await t.rollback(); return response.error(res, 'Insufficient wallet balance', 400); }
+
+    await User.update({ wallet_balance: newBalance }, { where: { id: req.params.id }, transaction: t });
+
+    if (WalletTransaction) {
+      await WalletTransaction.create({
+        user_id: req.params.id,
+        type: type === 'credit' ? 'credit' : 'debit',
+        amount: amt,
+        closing_balance: newBalance,
+        description: reason || `Admin ${type}`,
+        status: 'success'
+      }, { transaction: t });
     }
 
-    await dbTxn.commit();
-    return response.success(res, { balance: creditResult.newBalance }, 'Wallet adjusted successfully');
+    await t.commit();
+    return response.success(res, { wallet_balance: newBalance }, `Wallet ${type}ed ₹${amount}`);
   } catch (err) {
-    await dbTxn.rollback();
-    return response.error(res, err.message || 'Wallet adjustment failed', 400);
+    await t.rollback();
+    console.error('adjustWallet error:', err);
+    return response.error(res, 'Wallet adjustment failed', 500);
   }
 };
 
-// PUT /users/:id/api-override
-const overrideUserApi = async (req, res) => {
-  const { id } = req.params;
-  const { apiConfigId } = req.body;
-
-  try {
-    const user = await User.findByPk(id);
-    if (!user) {
-      return response.error(res, 'User not found', 404);
-    }
-
-    await user.update({ api_override_id: apiConfigId || null });
-    return response.success(res, user, 'User API routing override saved');
-  } catch (err) {
-    return response.error(res, 'Failed to save API routing override', 500);
-  }
-};
-
-module.exports = {
-  getUsers,
-  getUserDetail,
-  updateUserStatus,
-  adjustUserWallet,
-  overrideUserApi
-};
+module.exports = { getUsers, getUserDetail, updateUserStatus, adjustUserWallet };

@@ -1,79 +1,74 @@
-const { User, Transaction, ApiConfig } = require('../../models');
+const { User, Transaction, Wallet, WalletTransaction, sequelize } = require('../../models');
 const response = require('../../utils/response');
-const { getPagination, getPagingData } = require('../../utils/pagination');
-const { Op } = require('sequelize');
+const { Op, fn, col, literal } = require('sequelize');
 
 // GET /admin/dashboard
 const getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.count();
-    const activeUsers = await User.count({ where: { status: 'active' } });
-    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todayTransactions = await Transaction.count({
-      where: { created_at: { [Op.gte]: today } }
-    });
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const successTransactions = await Transaction.count({
-      where: { created_at: { [Op.gte]: today }, status: 'success' }
-    });
+    const [totalUsers, todayTxns, successTxns, todayRevenue, recentTransactions] = await Promise.all([
+      User.count(),
+      Transaction.count({ where: { created_at: { [Op.gte]: today } } }),
+      Transaction.count({ where: { created_at: { [Op.gte]: today }, status: 'success' } }),
+      Transaction.sum('recharge_amount', { where: { created_at: { [Op.gte]: today }, status: 'success' } }),
+      Transaction.findAll({
+        limit: 10,
+        order: [['created_at', 'DESC']],
+        include: [{ model: User, as: 'user', attributes: ['name', 'phone'] }]
+      })
+    ]);
 
-    const todayRevenue = await Transaction.sum('recharge_amount', {
-      where: { created_at: { [Op.gte]: today }, status: 'success' }
-    }) || 0.00;
+    const successRate = todayTxns > 0 ? parseFloat(((successTxns / todayTxns) * 100).toFixed(1)) : 100;
 
-    const todaySuccessRate = todayTransactions > 0 
-      ? parseFloat(((successTransactions / todayTransactions) * 100).toFixed(2)) 
-      : 100.00;
+    // Build revenue trend (last 7 days)
+    const revenueTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const next = new Date(d); next.setDate(next.getDate() + 1);
+      const amount = await Transaction.sum('recharge_amount', {
+        where: { created_at: { [Op.gte]: d, [Op.lt]: next }, status: 'success' }
+      }) || 0;
+      revenueTrend.push({ date: d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }), amount });
+    }
 
-    // Last 10 transactions
-    const latestTransactions = await Transaction.findAll({
-      limit: 10,
-      order: [['created_at', 'DESC']],
-      include: [{ model: User, as: 'user', attributes: ['name', 'phone'] }]
-    });
-
-    // Mock analytical distribution details
-    const last30DaysRevenue = [
-      { date: '2026-06-20', revenue: 15400 },
-      { date: '2026-06-21', revenue: 12100 },
-      { date: '2026-06-22', revenue: 19800 },
-      { date: '2026-06-23', revenue: 24500 },
-      { date: '2026-06-24', revenue: 28400 },
-      { date: '2026-06-25', revenue: 32000 },
-      { date: '2026-06-26', revenue: todayRevenue }
-    ];
-
-    const statusDistribution = [
-      { name: 'Success', value: successTransactions || 85, color: '#34C759' },
-      { name: 'Pending', value: (todayTransactions - successTransactions) || 10, color: '#FF9F0A' },
-      { name: 'Failed', value: 5, color: '#FF3B30' }
-    ];
-
-    const topOperators = [
-      { name: 'Jio Prepaid', count: 125, revenue: 25400 },
-      { name: 'Airtel Prepaid', count: 98, revenue: 19800 },
-      { name: 'Vi Prepaid', count: 42, revenue: 8400 }
-    ];
+    // Build txnStats (last 7 days)
+    const txnStats = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const next = new Date(d); next.setDate(next.getDate() + 1);
+      const [success, failed] = await Promise.all([
+        Transaction.count({ where: { created_at: { [Op.gte]: d, [Op.lt]: next }, status: 'success' } }),
+        Transaction.count({ where: { created_at: { [Op.gte]: d, [Op.lt]: next }, status: 'failed' } }),
+      ]);
+      txnStats.push({ date: d.toLocaleDateString('en-IN', { weekday: 'short' }), success, failed });
+    }
 
     return response.success(res, {
-      totalUsers,
-      activeUsers,
-      todayTransactions,
-      todayRevenue,
-      todaySuccessRate,
-      latestTransactions,
-      last30DaysRevenue,
-      statusDistribution,
-      topOperators
-    }, 'Admin dashboard metrics retrieved successfully');
+      stats: {
+        totalUsers,
+        todayRevenue: todayRevenue || 0,
+        todayTxns,
+        successRate,
+      },
+      revenueTrend,
+      txnStats,
+      recentTransactions,
+      topOperators: []
+    }, 'Dashboard stats retrieved');
   } catch (err) {
+    console.error('Dashboard error:', err);
     return response.error(res, 'Failed to fetch dashboard metrics', 500);
   }
 };
 
-module.exports = {
-  getDashboardStats
-};
+module.exports = { getDashboardStats };

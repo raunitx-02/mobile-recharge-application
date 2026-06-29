@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const navItems = [
   { section: 'OVERVIEW', items: [{ to: '/', label: 'Dashboard', icon: '📊' }] },
@@ -158,7 +159,9 @@ const AdminLayout: React.FC = () => {
 
         {/* Page Content */}
         <div style={{ flex: 1, padding: '24px', maxWidth: '1400px', width: '100%' }}>
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
     </div>

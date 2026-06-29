@@ -6,10 +6,25 @@ const hasPermission = (permission) => (req, res, next) => {
     return response.error(res, 'RBAC Role not assigned', 403);
   }
 
-  const permissions = adminUser.role.permissions || [];
-  
-  // SuperAdmin overrides all permissions checks
-  if (adminUser.role.name === 'SuperAdmin') {
+  const roleName = adminUser.role.name || '';
+
+  // SuperAdmin overrides all permission checks (both naming conventions)
+  if (
+    roleName === 'SuperAdmin' ||
+    roleName === 'super_admin' ||
+    roleName.toLowerCase() === 'superadmin'
+  ) {
+    return next();
+  }
+
+  // Parse permissions - handle both JSON string and array
+  let permissions = adminUser.role.permissions || [];
+  if (typeof permissions === 'string') {
+    try { permissions = JSON.parse(permissions); } catch { permissions = []; }
+  }
+
+  // Wildcard grants all permissions
+  if (permissions.includes('*')) {
     return next();
   }
 
