@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { generateAccessToken, generateRefreshToken, generateAdminToken } = require('../utils/jwt');
 const { generateOTP } = require('../utils/otp');
 const { User, OTPRecord, Notification, AdminUser, Role } = require('../models');
-const msg91Service = require('../services/msg91.service');
+const fast2smsService = require('../services/fast2sms.service');
 const redis = require('../config/redis');
 const response = require('../utils/response');
 const logger = require('../utils/logger');
@@ -25,11 +25,12 @@ const sendOTP = async (req, res) => {
     });
 
     // Send SMS
-    if (phone === '7292858748' || process.env.NODE_ENV === 'development') {
+    const bypassDev = (phone === '7292858748' || process.env.NODE_ENV === 'development') && process.env.FORCE_LIVE_SMS !== 'true';
+    if (bypassDev) {
       logger.info(`[DEV MODE] Generated OTP for ${phone} is ${otp}`);
       return response.success(res, { otp }, 'OTP sent successfully (Development Bypass)');
     } else {
-      await msg91Service.sendOTP(phone, otp);
+      await fast2smsService.sendOTP(phone, otp);
       return response.success(res, null, 'OTP sent successfully');
     }
   } catch (err) {

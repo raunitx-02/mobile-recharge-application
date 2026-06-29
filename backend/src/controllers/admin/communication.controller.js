@@ -1,7 +1,16 @@
 const response = require('../../utils/response');
 
 const getSmsConfig = async (req, res) => {
-  return response.success(res, { provider: 'MSG91', authkey: '[MASKED]', sender_id: 'AETHER' }, 'SMS configuration retrieved');
+  return response.success(
+    res,
+    {
+      provider: 'Fast2SMS',
+      authkey: '[MASKED]',
+      sender_id: process.env.FAST2SMS_SENDER_ID || 'BMSIPL',
+      route: process.env.FAST2SMS_OTP_ROUTE || 'otp'
+    },
+    'SMS configuration retrieved'
+  );
 };
 
 const updateSmsConfig = async (req, res) => {

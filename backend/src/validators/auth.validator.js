@@ -22,7 +22,7 @@ const register = Joi.object({
   email: Joi.string().email().required(),
   name: Joi.string().min(2).required(),
   password: Joi.string().min(6).required(),
-  referred_by: Joi.string().uuid().optional().allow('')
+  referred_by: Joi.string().alphanum().max(20).optional().allow('')
 });
 
 const adminLogin = Joi.object({
