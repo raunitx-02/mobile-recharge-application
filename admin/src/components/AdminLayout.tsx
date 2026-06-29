@@ -21,7 +21,6 @@ const navItems = [
   {
     section: 'CONTENT', items: [
       { to: '/operators', label: 'Operators', icon: '🗂️' },
-      { to: '/plans', label: 'Plans', icon: '📦' },
       { to: '/banners', label: 'Banners', icon: '🖼️' },
       { to: '/offers', label: 'Offers', icon: '🎁' },
     ]

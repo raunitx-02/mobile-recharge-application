@@ -4,18 +4,35 @@ const { Op } = require('sequelize');
 
 // GET /admin/transactions
 const getTransactions = async (req, res) => {
-  const { page = 1, limit = 20, search, status, type, dateFrom, dateTo } = req.query;
+  const { page = 1, limit = 20, search, status, type, dateFrom, dateTo, userId } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
   try {
     const where = {};
     if (status && status !== 'all') where.status = status;
     if (type && type !== 'all') where.type = type;
+    if (userId) where.user_id = userId;
+    
     if (search) {
+      const users = await User.findAll({
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${search}%` } },
+            { phone: { [Op.like]: `%${search}%` } }
+          ]
+        },
+        attributes: ['id']
+      });
+      const userIds = users.map(u => u.id);
+
       where[Op.or] = [
         { id: { [Op.like]: `%${search}%` } },
         { account_no: { [Op.like]: `%${search}%` } },
         { operator: { [Op.like]: `%${search}%` } }
       ];
+
+      if (userIds.length > 0) {
+        where[Op.or].push({ user_id: { [Op.in]: userIds } });
+      }
     }
     if (dateFrom || dateTo) {
       where.created_at = {};

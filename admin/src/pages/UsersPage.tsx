@@ -14,10 +14,16 @@ const UsersPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any>(null);
+  
+  // Wallet state
   const [walletModal, setWalletModal] = useState(false);
   const [walletAmount, setWalletAmount] = useState('');
   const [walletType, setWalletType] = useState<'credit' | 'debit'>('credit');
   const [walletReason, setWalletReason] = useState('');
+
+  // Edit details state
+  const [editModal, setEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', kyc_status: '' });
 
   const load = async (p = page, q = search) => {
     setLoading(true);
@@ -56,6 +62,29 @@ const UsersPage: React.FC = () => {
       setWalletReason('');
       load();
     } catch (e: any) { toast.error(e.response?.data?.message || 'Failed'); }
+  };
+
+  const handleOpenEdit = (user: any) => {
+    setSelected(user);
+    setEditForm({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      kyc_status: user.kyc_status || 'pending'
+    });
+    setEditModal(true);
+  };
+
+  const handleSaveDetails = async () => {
+    if (!selected) return;
+    try {
+      await adminApi.updateUser(selected.id, editForm);
+      toast.success('User details updated');
+      setEditModal(false);
+      load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update user details');
+    }
   };
 
   return (
@@ -113,12 +142,20 @@ const UsersPage: React.FC = () => {
                       </select>
                     </td>
                     <td>
-                      <button
-                        onClick={() => { setSelected(u); setWalletModal(true); }}
-                        style={{ padding: '5px 12px', borderRadius: '6px', background: 'rgba(79,70,229,0.08)', color: 'var(--primary)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', border: 'none' }}
-                      >
-                        💰 Wallet
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => { setSelected(u); setWalletModal(true); }}
+                          style={{ padding: '5px 10px', borderRadius: '6px', background: 'rgba(79,70,229,0.08)', color: 'var(--primary)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', border: 'none' }}
+                        >
+                          💰 Wallet
+                        </button>
+                        <button
+                          onClick={() => handleOpenEdit(u)}
+                          style={{ padding: '5px 10px', borderRadius: '6px', background: 'rgba(217,119,6,0.08)', color: 'var(--accent-amber)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', border: 'none' }}
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -161,6 +198,45 @@ const UsersPage: React.FC = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
               <button onClick={handleWalletAdjust} className="btn btn-primary" style={{ flex: 1 }}>Confirm</button>
               <button onClick={() => setWalletModal(false)} className="btn" style={{ flex: 1, background: 'var(--border)' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Details Modal */}
+      {editModal && selected && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ width: '440px', padding: '32px' }}>
+            <h3 style={{ marginBottom: '24px' }}>✏️ Edit User Details</h3>
+            
+            <div className="input-group">
+              <label className="input-label">Full Name</label>
+              <input className="input-field" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="John Doe" />
+            </div>
+            
+            <div className="input-group">
+              <label className="input-label">Phone Number</label>
+              <input className="input-field" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} placeholder="9876543210" />
+            </div>
+            
+            <div className="input-group">
+              <label className="input-label">Email Address</label>
+              <input className="input-field" type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} placeholder="john@example.com" />
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">KYC Status</label>
+              <select className="input-field" value={editForm.kyc_status} onChange={e => setEditForm(f => ({ ...f, kyc_status: e.target.value }))}>
+                <option value="pending">Pending</option>
+                <option value="submitted">Submitted</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button onClick={handleSaveDetails} className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
+              <button onClick={() => setEditModal(false)} className="btn" style={{ flex: 1, background: 'var(--border)' }}>Cancel</button>
             </div>
           </div>
         </div>

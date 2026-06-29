@@ -25,6 +25,7 @@ router.use('/fund-requests', fundRequestsRoutes);
 router.use('/operators', operatorsRoutes);
 router.use('/plans', plansRoutes);
 router.use('/commission', commissionRoutes);
+router.use('/commissions', commissionRoutes);
 router.use('/reports', reportsRoutes);
 
 // Settings & password

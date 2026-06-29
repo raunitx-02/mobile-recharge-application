@@ -95,4 +95,26 @@ const adjustUserWallet = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, getUserDetail, updateUserStatus, adjustUserWallet };
+// PUT /admin/users/:id
+const updateUser = async (req, res) => {
+  const { name, email, phone, kyc_status, status } = req.body;
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) return response.error(res, 'User not found', 404);
+
+    await user.update({
+      name: name !== undefined ? name : user.name,
+      email: email !== undefined ? email : user.email,
+      phone: phone !== undefined ? phone : user.phone,
+      kyc_status: kyc_status !== undefined ? kyc_status : user.kyc_status,
+      status: status !== undefined ? status : user.status
+    });
+
+    return response.success(res, user, 'User details updated successfully');
+  } catch (err) {
+    console.error('updateUser error:', err);
+    return response.error(res, 'Failed to update user details', 500);
+  }
+};
+
+module.exports = { getUsers, getUserDetail, updateUserStatus, adjustUserWallet, updateUser };

@@ -44,6 +44,8 @@ export const adminApi = {
     api.patch(`/api/admin/users/${id}/status`, { status }),
   adjustWallet: (id: string, data: any) =>
     api.post(`/api/admin/users/${id}/wallet`, data),
+  updateUser: (id: string, data: any) =>
+    api.put(`/api/admin/users/${id}`, data),
 
   // ── Transactions ──────────────────────────────────────────────────────
   getTransactions: (params?: any) =>

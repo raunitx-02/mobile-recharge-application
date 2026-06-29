@@ -8,6 +8,8 @@ router.use(verifyAdminJWT);
 
 router.get('/', hasPermission('users:read'), usersController.getUsers);
 router.get('/:id', hasPermission('users:read'), usersController.getUserDetail);
+router.put('/:id', hasPermission('users:write'), usersController.updateUser);
+router.patch('/:id', hasPermission('users:write'), usersController.updateUser);
 
 // Accept both PUT and PATCH for status update
 router.put('/:id/status', hasPermission('users:block'), usersController.updateUserStatus);
