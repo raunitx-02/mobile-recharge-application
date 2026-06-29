@@ -9,7 +9,7 @@ const dbPassword = process.env.DB_PASSWORD || 'postgres';
 
 let sequelize;
 
-if (process.env.NODE_ENV === 'development' && process.env.USE_SQLITE === 'true') {
+if (process.env.USE_SQLITE === 'true') {
   const path = require('path');
   const sqlitePath = path.join(__dirname, '../../optionspay.sqlite');
   logger.info(`Using SQLite database at file path: ${sqlitePath}`);
