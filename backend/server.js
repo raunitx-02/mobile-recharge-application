@@ -25,7 +25,16 @@ const io = new Server(server, {
 
 app.use(helmet());
 app.use(cors({ 
-  origin: [process.env.FRONTEND_URL || 'http://localhost:5173', process.env.ADMIN_URL || 'http://localhost:5174'],
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    process.env.ADMIN_URL || 'http://localhost:5174',
+    'https://optionspay.in',
+    'https://www.optionspay.in',
+    'https://api.optionspay.in',
+    // Allow Expo Go testing
+    /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,
+    /^exp:\/\/.+/
+  ],
   credentials: true 
 }));
 app.use(compression());
@@ -48,20 +57,20 @@ sequelize.authenticate()
   .then(() => {
     logger.info('Database authentication check succeeded.');
     
-    // Auto sync tables in development to simplify local verification
-    if (process.env.NODE_ENV === 'development') {
-      sequelize.sync({ alter: true })
-        .then(() => logger.info('Database models synchronized successfully.'))
-        .catch(err => logger.error('Database synchronization failed:', err));
-    }
+    // Sync tables - always in SQLite/dev, alter-only in production postgres
+    const syncOpts = process.env.USE_SQLITE === 'true' ? { force: false } : { alter: false };
+    sequelize.sync(syncOpts)
+      .then(() => logger.info('Database models synchronized successfully.'))
+      .catch(err => logger.error('Database synchronization failed:', err));
 
     server.listen(PORT, () => logger.info(`OptionsPay Server running on port ${PORT}`));
   })
   .catch(err => {
     logger.error('Database connection failed:', err);
-    // Allow server boot fallback in mocked mode if Postgres is missing locally (simplifies immediate frontend testing)
-    if (process.env.NODE_ENV === 'development') {
-      logger.warn('Failing soft. Starting Express Server on port ' + PORT + ' with mock database bypass.');
+    // In SQLite mode or development, allow server to start anyway
+    const useSqlite = process.env.USE_SQLITE === 'true';
+    if (process.env.NODE_ENV === 'development' || useSqlite) {
+      logger.warn('Starting Express Server with fallback mode on port ' + PORT);
       server.listen(PORT);
     } else {
       process.exit(1);
