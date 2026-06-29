@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/auth.store';
 
-const BASE = import.meta.env.VITE_API_URL || 'http://187.127.155.149';
+// Empty base = relative URLs. Works on any domain/IP automatically.
+// e.g. on optionspay.in/admin, /api/... calls go to optionspay.in/api/...
+const BASE = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({ baseURL: BASE });
 
