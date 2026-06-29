@@ -31,6 +31,8 @@ app.use(cors({
     'https://optionspay.in',
     'https://www.optionspay.in',
     'https://api.optionspay.in',
+    'http://187.127.155.149',
+    'http://187.127.155.149:3000',
     // Allow Expo Go testing
     /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/,
     /^exp:\/\/.+/
