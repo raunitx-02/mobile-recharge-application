@@ -62,10 +62,10 @@ const AdminLayout: React.FC = () => {
       }}>
         <div style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '24px' }}>💳</span>
-          <div style={{ fontWeight: 800, fontSize: '18px', color: '#fff' }}>OptionsPay</div>
+          <div style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-main)' }}>OptionsPay</div>
           <span style={{
-            background: 'rgba(108,60,225,0.2)',
-            color: 'var(--primary-light)',
+            background: 'rgba(99,102,241,0.1)',
+            color: 'var(--primary)',
             padding: '2px 6px',
             borderRadius: '4px',
             fontSize: '10px',

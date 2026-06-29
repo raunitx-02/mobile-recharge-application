@@ -14,18 +14,17 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error('Please enter both email and password');
+      toast.error('Please enter email and password');
       return;
     }
-
     setLoading(true);
     try {
       const { data } = await adminApi.login(email, password);
-      login(data.token, data.admin);
+      login(data.token || data.accessToken, data.admin || data.user);
       toast.success('Login successful!');
       navigate('/');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed. Invalid credentials.');
+      toast.error(error.response?.data?.message || 'Login failed. Check credentials.');
     } finally {
       setLoading(false);
     }
@@ -38,7 +37,7 @@ const LoginPage: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'var(--bg)',
-      backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(108,60,225,0.1) 0%, transparent 50%)'
+      backgroundImage: 'radial-gradient(circle at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 50%)'
     }}>
       <div className="card" style={{ width: '100%', maxWidth: '400px', padding: '40px' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>

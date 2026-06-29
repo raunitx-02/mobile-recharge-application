@@ -196,7 +196,7 @@ const DashboardPage: React.FC = () => {
             ) : (
               data?.topOperators.map((op: any, i: number) => (
                 <div key={op.name} style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: i !== data.topOperators.length - 1 ? '16px' : 0, borderBottom: i !== data.topOperators.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                     {op.name.charAt(0)}
                   </div>
                   <div style={{ flex: 1 }}>
