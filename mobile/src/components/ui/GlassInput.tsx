@@ -53,7 +53,7 @@ export const GlassInput = forwardRef<TextInput, GlassInputProps>(
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
         <TextInput
           ref={ref}
-          style={[styles.input, leftIcon && styles.inputWithLeft]}
+          style={[styles.input, leftIcon ? styles.inputWithLeft : null]}
           placeholderTextColor={colors.textTertiary}
           onFocus={handleFocus}
           onBlur={handleBlur}

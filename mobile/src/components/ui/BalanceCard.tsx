@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -16,6 +17,8 @@ import Animated, {
 interface BalanceCardProps {
   name: string;
   balance: number;  // cashback balance
+  onAddMoney?: () => void;
+  onWithdraw?: () => void;
 }
 
 function getInitials(name: string): string {
@@ -33,7 +36,7 @@ function formatBalance(amount: number): string {
   }).format(amount);
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance }) => {
+const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance, onAddMoney, onWithdraw }) => {
   const [isHidden, setIsHidden] = useState(false);
   const eyeScale = useSharedValue(1);
 
@@ -68,7 +71,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance }) => {
         <View style={styles.topRow}>
           <View style={styles.brandRow}>
             <View style={styles.brandDot} />
-            <Text style={styles.brandText}>CASHBACK WALLET</Text>
+            <Text style={styles.brandText}>OPTIONS PAY WALLET</Text>
           </View>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials(name)}</Text>
@@ -76,7 +79,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance }) => {
         </View>
 
         {/* Balance */}
-        <Text style={styles.balLabel}>Available Cashback</Text>
+        <Text style={styles.balLabel}>Available Wallet Balance</Text>
         <View style={styles.balRow}>
           <Text
             style={styles.balAmount}
@@ -93,10 +96,18 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ name, balance }) => {
           </Pressable>
         </View>
 
-        {/* Rule strip */}
-        <View style={styles.ruleStrip}>
-          <Text style={styles.ruleEmoji}>✨</Text>
-          <Text style={styles.ruleText}>Up to 20% usable per recharge</Text>
+        {/* Actions */}
+        <View style={styles.actionsRow}>
+          {onAddMoney && (
+            <TouchableOpacity onPress={onAddMoney} style={styles.actionBtn}>
+              <Text style={styles.actionBtnText}>➕ Add Money</Text>
+            </TouchableOpacity>
+          )}
+          {onWithdraw && (
+            <TouchableOpacity onPress={onWithdraw} style={styles.actionBtn}>
+              <Text style={styles.actionBtnText}>📤 Withdraw</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
     </Animated.View>
@@ -128,7 +139,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: 16,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   brandDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)' },
@@ -161,33 +172,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   balAmount: {
     flex: 1,
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: -1.5,
-    lineHeight: 48,
+    lineHeight: 44,
   },
   eyeBtn: { padding: 4 },
   eyeEmoji: { fontSize: 22 },
 
-  ruleStrip: {
+  actionsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    gap: 12,
+    marginTop: 8,
   },
-  ruleEmoji: { fontSize: 13 },
-  ruleText: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.88)' },
+  actionBtn: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  actionBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
 
 export default BalanceCard;

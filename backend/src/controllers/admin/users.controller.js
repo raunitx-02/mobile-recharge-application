@@ -102,10 +102,24 @@ const updateUser = async (req, res) => {
     const user = await User.findByPk(req.params.id);
     if (!user) return response.error(res, 'User not found', 404);
 
+    // Treat empty email string as null to avoid SQLite UNIQUE constraint failures
+    const updatedEmail = email !== undefined ? (email.trim() === '' ? null : email.trim()) : user.email;
+    const updatedPhone = phone !== undefined ? phone.trim() : user.phone;
+
+    if (updatedPhone && updatedPhone !== user.phone) {
+      const exists = await User.findOne({ where: { phone: updatedPhone } });
+      if (exists) return response.error(res, 'Phone number is already in use by another user', 400);
+    }
+
+    if (updatedEmail && updatedEmail !== user.email) {
+      const exists = await User.findOne({ where: { email: updatedEmail } });
+      if (exists) return response.error(res, 'Email address is already in use by another user', 400);
+    }
+
     await user.update({
-      name: name !== undefined ? name : user.name,
-      email: email !== undefined ? email : user.email,
-      phone: phone !== undefined ? phone : user.phone,
+      name: name !== undefined ? name.trim() : user.name,
+      email: updatedEmail,
+      phone: updatedPhone,
       kyc_status: kyc_status !== undefined ? kyc_status : user.kyc_status,
       status: status !== undefined ? status : user.status
     });
@@ -113,7 +127,7 @@ const updateUser = async (req, res) => {
     return response.success(res, user, 'User details updated successfully');
   } catch (err) {
     console.error('updateUser error:', err);
-    return response.error(res, 'Failed to update user details', 500);
+    return response.error(res, err.message || 'Failed to update user details', 500);
   }
 };
 

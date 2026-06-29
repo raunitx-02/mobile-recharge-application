@@ -93,7 +93,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               value={name}
               onChangeText={setName}
               placeholder="John Doe"
-              icon="👤"
+              leftIcon={<Text style={{ fontSize: 16 }}>👤</Text>}
             />
 
             <GlassInput
@@ -103,7 +103,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               placeholder="98765 43210"
               keyboardType="phone-pad"
               maxLength={10}
-              icon="📱"
+              leftIcon={<Text style={{ fontSize: 16 }}>📱</Text>}
             />
 
             <GlassInput
@@ -112,7 +112,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setEmail}
               placeholder="john@example.com"
               keyboardType="email-address"
-              icon="✉️"
+              leftIcon={<Text style={{ fontSize: 16 }}>✉️</Text>}
             />
 
             <GlassInput
@@ -121,7 +121,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setReferredBy}
               placeholder="REF12345"
               autoCapitalize="characters"
-              icon="🎁"
+              leftIcon={<Text style={{ fontSize: 16 }}>🎁</Text>}
             />
 
             <GlassButton

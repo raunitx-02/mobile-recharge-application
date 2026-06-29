@@ -17,6 +17,12 @@ const sendOTP = async (req, res) => {
   }
 
   try {
+    // Verify user exists first before sending OTP for login
+    const user = await User.findOne({ where: { phone } });
+    if (!user) {
+      return response.error(res, 'Account not found. Please register/create an account first.', 404);
+    }
+
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -32,7 +38,7 @@ const sendOTP = async (req, res) => {
     return response.success(res, null, 'OTP sent successfully');
   } catch (err) {
     logger.error('sendOTP error:', err.message);
-    return response.error(res, 'Failed to send OTP. Please try again.', 500);
+    return response.error(res, err.message || 'Failed to send OTP. Please try again.', 500);
   }
 };
 
@@ -217,9 +223,12 @@ const register = async (req, res) => {
       return response.error(res, 'Phone number already registered', 400);
     }
 
-    existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return response.error(res, 'Email address already registered', 400);
+    const cleanedEmail = email && email.trim() !== '' ? email.trim() : null;
+    if (cleanedEmail) {
+      existingUser = await User.findOne({ where: { email: cleanedEmail } });
+      if (existingUser) {
+        return response.error(res, 'Email address already registered', 400);
+      }
     }
 
     let referrer = null;
@@ -236,7 +245,7 @@ const register = async (req, res) => {
 
     const user = await User.create({
       phone,
-      email,
+      email: cleanedEmail,
       name,
       password_hash,
       referral_code: refCode,

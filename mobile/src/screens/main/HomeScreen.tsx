@@ -249,9 +249,10 @@ const HomeScreen: React.FC = () => {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const data = await walletService.getBalance();
-      if (typeof data?.balance === 'number') {
-        setBalance(data.balance);
+      const res = await walletService.getBalance();
+      const body = res.data?.data || res.data;
+      if (body && typeof body.balance === 'number') {
+        setBalance(body.balance);
       }
     } catch {
       // silently fall back to cached/default

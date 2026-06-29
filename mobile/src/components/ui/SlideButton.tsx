@@ -1,15 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { PanGestureHandler, PanGestureHandlerGestureEvent } from 'react-native-gesture-handler';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  useAnimatedGestureHandler, 
-  withSpring, 
-  runOnJS,
-  interpolate,
-  Extrapolate
-} from 'react-native-reanimated';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme';
@@ -30,7 +20,7 @@ export const SlideButton: React.FC<SlideButtonProps> = ({
   width = Dimensions.get('window').width * 0.85 
 }) => {
   const [complete, setComplete] = useState(false);
-  const translationX = useSharedValue(0);
+  const panX = useRef(new Animated.Value(0)).current;
   const maxTravel = width - THUMB_SIZE - PADDING * 2;
 
   const triggerComplete = () => {
@@ -39,63 +29,72 @@ export const SlideButton: React.FC<SlideButtonProps> = ({
     onComplete();
   };
 
-  const gestureHandler = useAnimatedGestureHandler<PanGestureHandlerGestureEvent, { startX: number }>({
-    onStart: (_, ctx) => {
-      ctx.startX = translationX.value;
-    },
-    onActive: (event, ctx) => {
-      const newX = ctx.startX + event.translationX;
-      translationX.value = Math.max(0, Math.min(newX, maxTravel));
-      
-      // Add subtle haptic ticks during pull
-      if (Math.floor(newX) % 30 === 0) {
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => !complete,
+      onPanResponderMove: (_, gestureState) => {
+        if (complete) return;
+        const newX = Math.max(0, Math.min(gestureState.dx, maxTravel));
+        panX.setValue(newX);
+        
+        // Add subtle haptic ticks during pull
+        if (Math.floor(newX) % 30 === 0) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (complete) return;
+        if (gestureState.dx >= maxTravel * 0.85) {
+          Animated.spring(panX, {
+            toValue: maxTravel,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7
+          }).start(() => {
+            triggerComplete();
+          });
+        } else {
+          Animated.spring(panX, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 40,
+            friction: 7
+          }).start();
+        }
       }
-    },
-    onEnd: () => {
-      if (translationX.value >= maxTravel * 0.85) {
-        translationX.value = withSpring(maxTravel);
-        runOnJS(triggerComplete)();
-      } else {
-        translationX.value = withSpring(0);
-      }
-    }
-  });
+    })
+  ).current;
 
-  const thumbStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translationX.value }]
-  }));
-
-  const textStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      translationX.value,
-      [0, maxTravel * 0.6],
-      [1, 0],
-      Extrapolate.CLAMP
-    );
-    return { opacity };
+  const textOpacity = panX.interpolate({
+    inputRange: [0, maxTravel * 0.6],
+    outputRange: [1, 0],
+    extrapolate: 'clamp'
   });
 
   return (
     <View style={[styles.container, { width }]}>
       <Text style={styles.trackBackground}>OPTIONSPAY SECURE CHECKOUT</Text>
       
-      <Animated.Text style={[styles.titleText, textStyle]}>
+      <Animated.Text style={[styles.titleText, { opacity: textOpacity }]}>
         {complete ? 'Processing Payment...' : title}
       </Animated.Text>
       
-      <PanGestureHandler onGestureEvent={gestureHandler} enabled={!complete}>
-        <Animated.View style={[styles.thumb, thumbStyle]}>
-          <LinearGradient
-            colors={[colors.primary, colors.primaryLight]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gradientThumb}
-          >
-            <Text style={styles.thumbArrow}>{complete ? '✓' : '⚡'}</Text>
-          </LinearGradient>
-        </Animated.View>
-      </PanGestureHandler>
+      <Animated.View 
+        style={[
+          styles.thumb, 
+          { transform: [{ translateX: panX }] }
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <LinearGradient
+          colors={[colors.primary, colors.primaryLight]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientThumb}
+        >
+          <Text style={styles.thumbArrow}>{complete ? '✓' : '⚡'}</Text>
+        </LinearGradient>
+      </Animated.View>
     </View>
   );
 };

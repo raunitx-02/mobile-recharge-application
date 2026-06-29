@@ -3,12 +3,17 @@ const User = require('../models/User');
 const response = require('../utils/response');
 
 const verifyJWT = async (req, res, next) => {
+  let token = null;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return response.error(res, 'Access token is required', 401);
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query.token) {
+    token = req.query.token;
   }
 
-  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return response.error(res, 'Access token is required', 401);
+  }
 
   try {
     const decoded = verifyAccessToken(token);

@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import rechargeService from '../../services/recharge.service';
+import { rechargeService } from '../../services/recharge.service';
 import { colors } from '../../theme';
 import { formatCurrency } from '../../utils/formatters';
 

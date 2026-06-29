@@ -7,8 +7,15 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  RechargeTab: undefined;
+  RechargeTab: { serviceType?: string } | undefined;
   WalletTab: undefined;
   HistoryTab: undefined;
   ProfileTab: undefined;
+};
+
+export type RootStackParamList = {
+  MainTabs: undefined;
+  AddMoney: undefined;
+  Withdraw: undefined;
+  TransactionHistory: undefined;
 };

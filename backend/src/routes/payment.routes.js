@@ -135,4 +135,67 @@ async function handlePaymentResult(result, raw) {
   }
 }
 
+const verifyJWT = require('../middleware/auth');
+router.get('/initiate', verifyJWT, async (req, res) => {
+  const { amount } = req.query;
+  const user = req.user;
+
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+    return res.status(400).send('Invalid amount');
+  }
+
+  try {
+    const amt = parseFloat(amount);
+    const ref = `WALLET_TOPUP_${Date.now()}`;
+    
+    if (Transaction) {
+      await Transaction.create({
+        user_id: user.id,
+        type: 'wallet',
+        operator: 'PAYU',
+        account_no: user.phone,
+        opening_balance: user.wallet_balance,
+        recharge_amount: amt,
+        debit_amount: 0,
+        closing_balance: user.wallet_balance,
+        api_name: 'PAYU',
+        api_request_id: ref,
+        status: 'pending'
+      });
+    }
+
+    const { txnid, params } = payuService.createPaymentOrder(user, amt, 'Wallet Topup', ref);
+
+    if (Transaction) {
+      await Transaction.update(
+        { api_request_id: txnid },
+        { where: { api_request_id: ref } }
+      );
+    }
+
+    const formFields = Object.entries(params)
+      .filter(([key]) => key !== 'paymentUrl')
+      .map(([key, value]) => `<input type="hidden" name="${key}" value="${value}" />`)
+      .join('\n');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Redirecting to PayU...</title></head>
+        <body onload="document.forms[0].submit()">
+          <p>Please wait, redirecting to payment gateway...</p>
+          <form method="POST" action="${params.paymentUrl}">
+            ${formFields}
+          </form>
+        </body>
+      </html>
+    `;
+
+    res.send(html);
+  } catch (err) {
+    logger.error('Payment initiate error', err.message);
+    res.status(500).send('Payment initiation failed: ' + err.message);
+  }
+});
+
 module.exports = router;

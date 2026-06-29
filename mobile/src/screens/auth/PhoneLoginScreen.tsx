@@ -76,7 +76,7 @@ export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
               placeholder="98765 43210"
               keyboardType="phone-pad"
               maxLength={10}
-              icon="📱"
+              leftIcon={<Text style={{ fontSize: 16 }}>📱</Text>}
             />
             
             <GlassButton 
