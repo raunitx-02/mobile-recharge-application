@@ -19,8 +19,12 @@ const LoginPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const { data } = await adminApi.login(email, password);
-      login(data.token || data.accessToken, data.admin || data.user);
+      const response = await adminApi.login(email, password);
+      const resData = response.data?.data || response.data;
+      if (!resData || (!resData.token && !resData.accessToken)) {
+        throw new Error('No authentication token returned from server');
+      }
+      login(resData.token || resData.accessToken, resData.admin || resData.user);
       toast.success('Login successful!');
       navigate('/');
     } catch (error: any) {
