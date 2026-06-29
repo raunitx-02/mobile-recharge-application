@@ -11,6 +11,7 @@ const notificationRoutes = require('./notification.routes');
 const profileRoutes = require('./profile.routes');
 const adminRoutes = require('./admin');
 const kwikapiRoutes = require('./kwikapi.routes');
+const paymentRoutes = require('./payment.routes');
 
 // Bind User flows
 router.use('/auth', authRoutes);
@@ -24,6 +25,9 @@ router.use('/profile', profileRoutes);
 
 // KwikAPI Webhook Callback (transaction status updates from KwikAPI)
 router.use('/kwikapi', kwikapiRoutes);
+
+// PayU Payment Gateway (success/failure redirects + webhook)
+router.use('/payment', paymentRoutes);
 
 // Bind Admin flow
 router.use('/admin', adminRoutes);
