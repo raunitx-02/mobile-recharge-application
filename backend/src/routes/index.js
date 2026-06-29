@@ -10,8 +10,9 @@ const offerRoutes = require('./offer.routes');
 const notificationRoutes = require('./notification.routes');
 const profileRoutes = require('./profile.routes');
 const adminRoutes = require('./admin');
-const kwikapiRoutes = require('./kwikapi.routes');
-const paymentRoutes = require('./payment.routes');
+const kwikapiRoutes  = require('./kwikapi.routes');
+const paymentRoutes  = require('./payment.routes');
+const ezytmRoutes    = require('./ezytm.routes');
 
 // Bind User flows
 router.use('/auth', authRoutes);
@@ -23,8 +24,11 @@ router.use('/offers', offerRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/profile', profileRoutes);
 
-// KwikAPI Webhook Callback (transaction status updates from KwikAPI)
+// KwikAPI Webhook Callback (transaction status from KwikAPI)
 router.use('/kwikapi', kwikapiRoutes);
+
+// Ezytm / Robotic Exchange Callback (LAPU recharge status)
+router.use('/ezytm', ezytmRoutes);
 
 // PayU Payment Gateway (success/failure redirects + webhook)
 router.use('/payment', paymentRoutes);
