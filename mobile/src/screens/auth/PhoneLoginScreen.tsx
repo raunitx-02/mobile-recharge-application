@@ -64,7 +64,7 @@ export const PhoneLoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.logoCircle}>
               <Text style={styles.logoText}>Æ</Text>
             </View>
-            <Text style={styles.title}>Welcome to AetherPay</Text>
+            <Text style={styles.title}>Welcome to OptionsPay</Text>
             <Text style={styles.subtitle}>Enter your mobile number to sign in or get started.</Text>
           </View>
 

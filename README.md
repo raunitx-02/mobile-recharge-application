@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ AetherPay
+# ⚡ OptionsPay
 
 ### *Recharge your world, instantly.*
 
@@ -29,7 +29,7 @@ built with React Native · Node.js · PostgreSQL · Razorpay · iOS 27 Liquid Gl
 
 ## 📖 Table of Contents
 
-- [About AetherPay](#-about-aetherpay)
+- [About OptionsPay](#-about-optionspay)
 - [Key Features](#-key-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
@@ -47,15 +47,15 @@ built with React Native · Node.js · PostgreSQL · Razorpay · iOS 27 Liquid Gl
 
 ---
 
-## 🌟 About AetherPay
+## 🌟 About OptionsPay
 
-**AetherPay** is a production-grade, full-stack **BBPS (Bharat Bill Payment System) Mobile Recharge & Bill Payment Platform** designed for the Indian market. It enables users to recharge mobile phones (prepaid/postpaid), pay DTH bills, and settle utility bills (electricity, water, gas, insurance, and 100+ more BBPS billers) — all through a single, beautiful app.
+**OptionsPay** is a production-grade, full-stack **BBPS (Bharat Bill Payment System) Mobile Recharge & Bill Payment Platform** designed for the Indian market. It enables users to recharge mobile phones (prepaid/postpaid), pay DTH bills, and settle utility bills (electricity, water, gas, insurance, and 100+ more BBPS billers) — all through a single, beautiful app.
 
-Built from the ground up with a **premium iOS 27 Liquid Glass design language**, AetherPay delivers an experience that feels native, fast, and delightful. Every interaction is animated with spring physics, every surface is frosted glass, and every transition feels alive.
+Built from the ground up with a **premium iOS 27 Liquid Glass design language**, OptionsPay delivers an experience that feels native, fast, and delightful. Every interaction is animated with spring physics, every surface is frosted glass, and every transition feels alive.
 
-### Why AetherPay?
+### Why OptionsPay?
 
-| Traditional Apps | AetherPay |
+| Traditional Apps | OptionsPay |
 |-----------------|-----------|
 | Generic, dated UI | iOS 27 Liquid Glass, premium light mode |
 | Basic features | Complete BBPS integration + smart wallet |
@@ -105,7 +105,7 @@ Built from the ground up with a **premium iOS 27 Liquid Glass design language**,
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                        AETHERPAY PLATFORM                            │
+│                        OPTIONSPAY PLATFORM                            │
 │                                                                      │
 │  ┌─────────────────┐          ┌──────────────────────────────────┐  │
 │  │   📱 Mobile App  │          │       🖥️ Admin Panel             │  │
@@ -198,7 +198,7 @@ Built from the ground up with a **premium iOS 27 Liquid Glass design language**,
 
 ## 🔑 Third-Party Integrations & API Credentials Needed
 
-To make AetherPay fully live and working, you need accounts and API keys from these providers:
+To make OptionsPay fully live and working, you need accounts and API keys from these providers:
 
 ### Mandatory (Core Functionality)
 
@@ -339,7 +339,7 @@ USE_SQLITE=true NODE_ENV=development npm run dev
 
 **Default Super Admin Credentials:**
 ```
-Email: admin@aetherpay.in
+Email: admin@optionspay.in
 Password: Admin@123
 ```
 
@@ -385,8 +385,8 @@ npx expo start
 NODE_ENV=development
 PORT=3000
 USE_SQLITE=true
-JWT_SECRET=aetherpay-super-secret-jwt-key
-JWT_REFRESH_SECRET=aetherpay-refresh-secret-key
+JWT_SECRET=optionspay-super-secret-jwt-key
+JWT_REFRESH_SECRET=optionspay-refresh-secret-key
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=30d
 ENCRYPTION_KEY=32-char-encryption-key-here-for-aether-pay
@@ -395,7 +395,7 @@ ADMIN_URL=http://localhost:5173
 
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=aetherpay_db
+DB_NAME=optionspay_db
 DB_USER=postgres
 DB_PASSWORD=postgres
 
@@ -409,8 +409,8 @@ MSG91_SENDER_ID=AETHER
 MSG91_TEMPLATE_ID=your-dlt-template-id
 
 SENDGRID_API_KEY=SG.xxxxxxxxxxxx
-SENDGRID_FROM_EMAIL=noreply@aetherpay.in
-SENDGRID_FROM_NAME=AetherPay
+SENDGRID_FROM_EMAIL=noreply@optionspay.in
+SENDGRID_FROM_NAME=OptionsPay
 ```
 
 ---
@@ -453,7 +453,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 
 <div align="center">
 
-**⚡ AetherPay** — *Recharge your world, instantly.*
+**⚡ OptionsPay** — *Recharge your world, instantly.*
 
 Made with ❤️ for the Indian fintech ecosystem
 

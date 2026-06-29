@@ -67,7 +67,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'aetherpay-auth',
+      name: 'optionspay-auth',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         user: state.user,

@@ -30,7 +30,7 @@ export default function LoginPage() {
   return (
     <div className="login-container">
       <div className="login-card">
-        <h2 className="login-title">AetherPay Admin</h2>
+        <h2 className="login-title">OptionsPay Admin</h2>
         <p className="login-subtitle">Sign in to manage carrier configurations and transaction audits.</p>
         
         {error && <div className="login-error">{error}</div>}
@@ -42,7 +42,7 @@ export default function LoginPage() {
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              placeholder="admin@aetherpay.in"
+              placeholder="admin@optionspay.in"
               required 
             />
           </div>

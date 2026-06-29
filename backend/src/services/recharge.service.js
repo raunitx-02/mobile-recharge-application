@@ -56,7 +56,7 @@ async function initiateRecharge(userId, { type, operatorCode, accountNo, circle,
 
   if (!apiConfig) {
     // If no provider config found, fallback to standard mock placeholder configuration
-    apiConfig = await ApiConfig.findOne({ where: { name: 'AetherPay Mock API' } });
+    apiConfig = await ApiConfig.findOne({ where: { name: 'OptionsPay Mock API' } });
     if (!apiConfig) {
       throw new Error('No active API providers available. Recharge blocked.');
     }

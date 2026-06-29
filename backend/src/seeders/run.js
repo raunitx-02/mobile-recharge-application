@@ -39,13 +39,13 @@ async function runSeeders() {
 
     await AdminUser.create({
       name: 'Super Administrator',
-      email: 'admin@aetherpay.in',
+      email: 'admin@optionspay.in',
       password_hash: passwordHash,
       role_id: superAdminRole.id,
       status: 'active'
     });
 
-    logger.info('Admin credentials seeded (Email: admin@aetherpay.in, Pass: Admin@123).');
+    logger.info('Admin credentials seeded (Email: admin@optionspay.in, Pass: Admin@123).');
 
     // 3. Operators
     const ops = [
@@ -71,11 +71,11 @@ async function runSeeders() {
     // 4. API Provider Configs
     const mockCreds = encrypt(JSON.stringify({ mock_api: true }));
     const mockApiConfig = await ApiConfig.create({
-      name: 'AetherPay Mock API',
+      name: 'OptionsPay Mock API',
       type: 'recharge1',
-      base_url: 'https://api.mock.aetherpay.in/recharge',
-      status_url: 'https://api.mock.aetherpay.in/status',
-      balance_url: 'https://api.mock.aetherpay.in/balance',
+      base_url: 'https://api.mock.optionspay.in/recharge',
+      status_url: 'https://api.mock.optionspay.in/status',
+      balance_url: 'https://api.mock.optionspay.in/balance',
       credentials_encrypted: mockCreds,
       in_switch: true,
       status: true

@@ -3,7 +3,7 @@ const logger = require('../utils/logger');
 
 const dbHost = process.env.DB_HOST || 'localhost';
 const dbPort = process.env.DB_PORT || 5432;
-const dbName = process.env.DB_NAME || 'aetherpay_db';
+const dbName = process.env.DB_NAME || 'optionspay_db';
 const dbUser = process.env.DB_USER || 'postgres';
 const dbPassword = process.env.DB_PASSWORD || 'postgres';
 
@@ -11,7 +11,7 @@ let sequelize;
 
 if (process.env.NODE_ENV === 'development' && process.env.USE_SQLITE === 'true') {
   const path = require('path');
-  const sqlitePath = path.join(__dirname, '../../aetherpay.sqlite');
+  const sqlitePath = path.join(__dirname, '../../optionspay.sqlite');
   logger.info(`Using SQLite database at file path: ${sqlitePath}`);
   sequelize = new Sequelize({
     dialect: 'sqlite',

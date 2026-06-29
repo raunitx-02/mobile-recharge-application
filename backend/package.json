@@ -1,7 +1,7 @@
 {
-  "name": "aetherpay-backend",
+  "name": "optionspay-backend",
   "version": "1.0.0",
-  "description": "AetherPay BBPS Mobile Recharge Platform - Backend API",
+  "description": "OptionsPay - BBPS Mobile Recharge & Bill Payment Platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

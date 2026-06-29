@@ -41,7 +41,7 @@ export const OTPVerifyScreen: React.FC<Props> = ({ route, navigation }) => {
       await setAuth(user, accessToken, refreshToken);
       Toast.show({
         type: 'success',
-        text1: 'Welcome to AetherPay 🎉',
+        text1: 'Welcome to OptionsPay 🎉',
         text2: 'Session authenticated successfully'
       });
     } catch (err: any) {

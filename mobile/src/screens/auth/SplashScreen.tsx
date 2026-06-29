@@ -39,7 +39,7 @@ export const SplashScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.logoCircle}>
           <Text style={styles.logoText}>⚡</Text>
         </View>
-        <Text style={styles.title}>AetherPay</Text>
+        <Text style={styles.title}>OptionsPay</Text>
         <Text style={styles.tagline}>Recharge your world, instantly.</Text>
       </Animated.View>
     </View>

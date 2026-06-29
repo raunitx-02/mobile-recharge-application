@@ -78,7 +78,7 @@ export const SlideButton: React.FC<SlideButtonProps> = ({
 
   return (
     <View style={[styles.container, { width }]}>
-      <Text style={styles.trackBackground}>AETHERPAY SECURE CHECKOUT</Text>
+      <Text style={styles.trackBackground}>OPTIONSPAY SECURE CHECKOUT</Text>
       
       <Animated.Text style={[styles.titleText, textStyle]}>
         {complete ? 'Processing Payment...' : title}

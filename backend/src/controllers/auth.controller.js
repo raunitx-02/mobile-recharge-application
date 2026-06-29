@@ -86,7 +86,7 @@ const verifyOTP = async (req, res) => {
       // Create welcome notification
       await Notification.create({
         user_id: user.id,
-        title: 'Welcome to AetherPay 🎉',
+        title: 'Welcome to OptionsPay 🎉',
         body: 'Welcome! Start recharges and earn high commission slabs instantly.',
         type: 'info'
       });
@@ -282,7 +282,7 @@ const refreshSessionToken = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'aetherpay-refresh-secret');
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'optionspay-refresh-secret');
     
     // Check if token blacklisted in Redis
     if (redis && redis.status !== 'mock') {

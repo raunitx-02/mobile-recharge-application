@@ -30,7 +30,7 @@ export default function DashboardPage() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div>
-          <h1>AetherPay Admin Console</h1>
+          <h1>OptionsPay Admin Console</h1>
           <p>Real-time transaction analytics and carrier routing switches.</p>
         </div>
         <button onClick={clearAuth} className="logout-btn">Log Out</button>

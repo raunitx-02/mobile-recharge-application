@@ -1,17 +1,22 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "OptionsPay",
+    "slug": "optionspay",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "scheme": "optionspay",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "in.optionspay.app",
+      "buildNumber": "1"
     },
     "android": {
+      "package": "in.optionspay.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0A0F1E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -23,6 +28,10 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "apiUrl": "https://api.optionspay.in",
+      "domain": "https://optionspay.in"
+    }
   }
 }

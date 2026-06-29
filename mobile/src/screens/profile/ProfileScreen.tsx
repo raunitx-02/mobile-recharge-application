@@ -39,8 +39,8 @@ type PolicyType = 'about' | 'privacy' | 'terms' | 'refund';
 
 const POLICY: Record<PolicyType, { title: string; text: string }> = {
   about: {
-    title: 'About AetherPay',
-    text: 'AetherPay is India\u2019s next-generation digital payments platform, designed to make recharges and utility bill payments fast, simple, and rewarding. Our platform handles telecom prepaid/postpaid, DTH, electricity boards, gas pipelines, water connections, broadband, FASTag top-ups, and direct rent payments. Powered by secure BBPS APIs to ensure zero-failure transaction rates and instant cashbacks.',
+    title: 'About OptionsPay',
+    text: 'OptionsPay is India\u2019s next-generation digital payments platform, designed to make recharges and utility bill payments fast, simple, and rewarding. Our platform handles telecom prepaid/postpaid, DTH, electricity boards, gas pipelines, water connections, broadband, FASTag top-ups, and direct rent payments. Powered by secure BBPS APIs to ensure zero-failure transaction rates and instant cashbacks.',
   },
   privacy: {
     title: 'Privacy Policy',
@@ -48,11 +48,11 @@ const POLICY: Record<PolicyType, { title: string; text: string }> = {
   },
   terms: {
     title: 'Terms & Conditions',
-    text: 'By registering on AetherPay, you agree to our usage terms. KYC verification (PAN + Aadhaar) is mandatory before withdrawing earned cashbacks into UPI or bank accounts. Wallet balances loaded via cards or net banking are non-refundable and must be used for utility recharges.',
+    text: 'By registering on OptionsPay, you agree to our usage terms. KYC verification (PAN + Aadhaar) is mandatory before withdrawing earned cashbacks into UPI or bank accounts. Wallet balances loaded via cards or net banking are non-refundable and must be used for utility recharges.',
   },
   refund: {
     title: 'Refund Policy',
-    text: 'Recharge failures are automatically detected. If an aggregator API rejects a transaction, the debited amount is instantly refunded to your AetherPay wallet. Once a recharge is successfully credited by the telecom carrier or biller, no refunds can be processed.',
+    text: 'Recharge failures are automatically detected. If an aggregator API rejects a transaction, the debited amount is instantly refunded to your OptionsPay wallet. Once a recharge is successfully credited by the telecom carrier or biller, no refunds can be processed.',
   },
 };
 
@@ -242,7 +242,7 @@ export const ProfileScreen: React.FC = () => {
   // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleLogout = () => {
-    Alert.alert('Logout Session', 'Are you sure you want to log out of AetherPay?', [
+    Alert.alert('Logout Session', 'Are you sure you want to log out of OptionsPay?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Logout',
@@ -292,7 +292,7 @@ export const ProfileScreen: React.FC = () => {
   const handleShareReferral = async () => {
     try {
       await Share.share({
-        message: `Join AetherPay — India's best recharge & bill payment app. Use my code ${referCode} and earn ₹50 cashback on your first recharge! Download: https://aetherpay.in/r/${referCode}`,
+        message: `Join OptionsPay — India's best recharge & bill payment app. Use my code ${referCode} and earn ₹50 cashback on your first recharge! Download: https://optionspay.in/r/${referCode}`,
       });
     } catch {
       Toast.show({ type: 'error', text1: 'Could not open share sheet' });
@@ -429,7 +429,7 @@ export const ProfileScreen: React.FC = () => {
         {/* ═══ POLICIES SECTION ═══ */}
         <Text style={styles.sectionLabel}>Legal & Policies</Text>
         <View style={styles.listCard}>
-          <MenuRow emoji="ℹ️"  iconBg="#F2F2F7" label="About AetherPay" onPress={() => { setPolicyType('about');   setActiveView('policy'); }} />
+          <MenuRow emoji="ℹ️"  iconBg="#F2F2F7" label="About OptionsPay" onPress={() => { setPolicyType('about');   setActiveView('policy'); }} />
           <MenuRow emoji="🔒" iconBg="#F2F2F7" label="Privacy Policy"  onPress={() => { setPolicyType('privacy'); setActiveView('policy'); }} />
           <MenuRow emoji="📜" iconBg="#F2F2F7" label="Terms & Conditions" onPress={() => { setPolicyType('terms');   setActiveView('policy'); }} />
           <MenuRow emoji="💸" iconBg="#F2F2F7" label="Refund Policy"   onPress={() => { setPolicyType('refund');  setActiveView('policy'); }} isLast />
@@ -448,7 +448,7 @@ export const ProfileScreen: React.FC = () => {
           <MenuRow
             emoji="⭐"
             iconBg="#FFFBEA"
-            label="Rate AetherPay"
+            label="Rate OptionsPay"
             sublabel="Love the app? Leave us a review!"
             onPress={() => Toast.show({ type: 'success', text1: 'Thank you!', text2: 'Redirecting to store…' })}
             isLast
@@ -461,7 +461,7 @@ export const ProfileScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* App version */}
-        <Text style={styles.version}>AetherPay v1.0.0 · Made in India 🇮🇳</Text>
+        <Text style={styles.version}>OptionsPay v1.0.0 · Made in India 🇮🇳</Text>
 
         <View style={{ height: 110 }} />
       </ScrollView>

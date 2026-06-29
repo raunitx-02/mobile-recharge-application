@@ -16,7 +16,7 @@
  *
  * Set callback URL to:
  *   DEV  (ngrok): https://xxxx.ngrok.io/api/kwikapi/callback
- *   PROD:         https://api.aetherpay.in/api/kwikapi/callback
+ *   PROD:         https://api.optionspay.in/api/kwikapi/callback
  */
 
 const express = require('express');

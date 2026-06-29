@@ -9,7 +9,7 @@ const logger = winston.createLogger({
     winston.format.splat(),
     winston.format.json()
   ),
-  defaultMeta: { service: 'aetherpay-backend' },
+  defaultMeta: { service: 'optionspay-backend' },
   transports: [
     new winston.transports.File({ 
       filename: path.join(__dirname, '../../logs/error.log'), 

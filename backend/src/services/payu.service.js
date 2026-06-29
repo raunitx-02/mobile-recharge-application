@@ -24,11 +24,13 @@ const logger = require('../utils/logger');
 // Config
 // ─────────────────────────────────────────────────────────────────────────────
 
-const KEY      = process.env.PAYU_MERCHANT_KEY || 'TXvPg7';
-const SALT     = process.env.PAYU_SALT         || '6MX0j4DIdGq0GusIalftzPlFZAwDICtE';
-const MID      = process.env.PAYU_MID          || '12906764';
-const BASE_URL = process.env.PAYU_BASE_URL     || 'https://secure.payu.in';
-const MODE     = process.env.PAYU_MODE         || 'LIVE';
+const KEY           = process.env.PAYU_MERCHANT_KEY   || 'TXvPg7';
+const SALT          = process.env.PAYU_SALT           || '6MX0j4DIdGq0GusIalftzPlFZAwDICtE';
+const MID           = process.env.PAYU_MID            || '12906764';
+const CLIENT_ID     = process.env.PAYU_CLIENT_ID      || '';
+const CLIENT_SECRET = process.env.PAYU_CLIENT_SECRET  || '';
+const BASE_URL      = process.env.PAYU_BASE_URL       || 'https://secure.payu.in';
+const MODE          = process.env.PAYU_MODE           || 'LIVE';
 
 const PAYMENT_URL    = MODE === 'LIVE' ? 'https://secure.payu.in/_payment' : 'https://test.payu.in/_payment';
 const VERIFY_API_URL = MODE === 'LIVE' ? 'https://info.payu.in/merchant/postservice.php?form=2' : 'https://test.payu.in/merchant/postservice.php?form=2';
@@ -114,7 +116,7 @@ function createPaymentOrder(user, amount, purpose, rechargeRef) {
     amount,
     productinfo: purpose.slice(0, 100),
     firstname:   (user.name || 'Customer').split(' ')[0],
-    email:       user.email || `${user.phone}@aetherpay.in`,
+    email:       user.email || `${user.phone}@optionspay.in`,
     phone:       user.phone || '',
     udf1:        user.id     || '',   // user_id — stored for reconciliation
     udf2:        rechargeRef || '',   // internal recharge ref

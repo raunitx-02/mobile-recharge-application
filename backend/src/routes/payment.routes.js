@@ -9,7 +9,7 @@
  *
  * Set Webhook URL in PayU Dashboard:
  *   payu.in → Developer → Webhooks → Add Webhook
- *   URL: https://api.aetherpay.in/api/payment/webhook
+ *   URL: https://api.optionspay.in/api/payment/webhook
  */
 
 const express = require('express');

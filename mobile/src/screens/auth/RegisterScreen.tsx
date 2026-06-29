@@ -83,7 +83,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       >
         <ScrollView contentContainerStyle={styles.scroll}>
           <View style={styles.header}>
-            <Text style={styles.title}>Join AetherPay</Text>
+            <Text style={styles.title}>Join OptionsPay</Text>
             <Text style={styles.subtitle}>Create an account to start earning high commission slabs instantly.</Text>
           </View>
 

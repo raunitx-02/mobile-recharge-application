@@ -9,7 +9,7 @@ const updateSmsConfig = async (req, res) => {
 };
 
 const getEmailConfig = async (req, res) => {
-  return response.success(res, { provider: 'SendGrid', key: '[MASKED]', from_email: 'noreply@aetherpay.in' }, 'Email configuration retrieved');
+  return response.success(res, { provider: 'SendGrid', key: '[MASKED]', from_email: 'noreply@optionspay.in' }, 'Email configuration retrieved');
 };
 
 const updateEmailConfig = async (req, res) => {

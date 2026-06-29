@@ -55,7 +55,7 @@ sequelize.authenticate()
         .catch(err => logger.error('Database synchronization failed:', err));
     }
 
-    server.listen(PORT, () => logger.info(`AetherPay Server running on port ${PORT}`));
+    server.listen(PORT, () => logger.info(`OptionsPay Server running on port ${PORT}`));
   })
   .catch(err => {
     logger.error('Database connection failed:', err);
