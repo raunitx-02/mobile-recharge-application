@@ -25,8 +25,8 @@ api.interceptors.response.use(
 );
 
 export const adminApi = {
-  // Auth
-  login: (email: string, password: string) => api.post('/auth/admin/login', { email, password }),
+  // Auth - admin uses the same /api/auth/login endpoint (it checks AdminUser table too)
+  login: (email: string, password: string) => api.post('/api/auth/login', { email, password }),
   
   // Dashboard  
   getDashboard: () => api.get('/admin/dashboard'),
