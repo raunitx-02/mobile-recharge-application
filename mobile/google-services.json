@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "60583836273",
+    "project_id": "optionspay-c1b39",
+    "storage_bucket": "optionspay-c1b39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:60583836273:android:2e582b4c933d0260ba79d0",
+        "android_client_info": {
+          "package_name": "in.optionspay.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9z-GpAYBqEIhLWyujrYcr6orJfd2JH-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
