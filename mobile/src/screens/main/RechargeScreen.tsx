@@ -1,674 +1,1194 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  Dimensions,
-  Platform,
-  StatusBar,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  TextInput, StatusBar, Platform, ActivityIndicator,
+  FlatList, Alert, KeyboardAvoidingView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme';
-import { RechargeConfirmModal } from '../../components/modals/RechargeConfirmModal';
 import Toast from 'react-native-toast-message';
-import { rechargeService } from '../../services/recharge.service';
-import { useAuthStore } from '../../store/auth.store';
 
-const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 56) / 4;
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
 
-// ─── Full BBPS + Recharge Categories ─────────────────────────────────────────
-const QUICK_ACTIONS = [
-  { id: 'prepaid',    label: 'Mobile\nPrepaid',   icon: '📱', grad: ['#007AFF', '#5AC8FA'] },
-  { id: 'postpaid',   label: 'Mobile\nPostpaid',  icon: '📞', grad: ['#5856D6', '#AF52DE'] },
-  { id: 'dth',        label: 'DTH\nRecharge',     icon: '📡', grad: ['#FF9500', '#FFCC00'] },
-  { id: 'electricity',label: 'Electricity\nBill',  icon: '⚡', grad: ['#FF6B35', '#FF9500'] },
+type Category =
+  | 'mobile_prepaid' | 'mobile_postpaid' | 'dth'
+  | 'electricity' | 'water' | 'gas' | 'broadband'
+  | 'rent' | 'fasttag' | 'insurance' | 'loan' | 'credit_card';
+
+interface Plan {
+  id: string;
+  amount: number;
+  validity: string;
+  data: string;
+  calls: string;
+  sms: string;
+  tag?: 'POPULAR' | 'BEST VALUE' | 'OTT';
+  description?: string;
+  category: 'popular' | 'data' | 'talktime' | 'validity' | 'ott' | 'roaming';
+}
+
+interface BillInfo {
+  consumerName: string;
+  billAmount: number;
+  dueDate: string;
+  billPeriod: string;
+  consumerNo: string;
+  extraInfo?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CATEGORIES: { id: Category; emoji: string; label: string; color: string }[] = [
+  { id: 'mobile_prepaid',  emoji: '📱', label: 'Mobile\nPrepaid',  color: '#1D6FEB' },
+  { id: 'mobile_postpaid', emoji: '📲', label: 'Postpaid\nBill',   color: '#7C3AED' },
+  { id: 'dth',             emoji: '📺', label: 'DTH',              color: '#D97B00' },
+  { id: 'electricity',     emoji: '⚡', label: 'Electricity',      color: '#F59E0B' },
+  { id: 'water',           emoji: '💧', label: 'Water',            color: '#3B82F6' },
+  { id: 'gas',             emoji: '🔥', label: 'Piped Gas',        color: '#EF4444' },
+  { id: 'broadband',       emoji: '📡', label: 'Broadband',        color: '#8B5CF6' },
+  { id: 'rent',            emoji: '🏠', label: 'Rent Pay',         color: '#059669' },
+  { id: 'fasttag',         emoji: '🛣️', label: 'FASTag',          color: '#64748B' },
+  { id: 'insurance',       emoji: '🛡️', label: 'Insurance',       color: '#EC4899' },
+  { id: 'loan',            emoji: '🏦', label: 'Loan EMI',         color: '#14B8A6' },
+  { id: 'credit_card',     emoji: '💳', label: 'Credit Card',      color: '#F97316' },
 ];
 
-const BILL_PAYMENTS = [
-  { id: 'electricity', label: 'Electricity',   icon: '⚡',  color: '#FF6B35', bg: '#FFF0EA' },
-  { id: 'water',       label: 'Water',          icon: '💧',  color: '#007AFF', bg: '#EAF3FF' },
-  { id: 'gas_piped',   label: 'Piped Gas',      icon: '🔥',  color: '#FF3B30', bg: '#FFEAEA' },
-  { id: 'broadband',   label: 'Broadband',      icon: '🌐',  color: '#34C759', bg: '#EAFFF0' },
-  { id: 'landline',    label: 'Landline',        icon: '☎️',  color: '#5856D6', bg: '#F0EAFF' },
-  { id: 'cable_tv',    label: 'Cable TV',        icon: '📺',  color: '#FF9500', bg: '#FFF6EA' },
-  { id: 'gas_cylinder',label: 'LPG Cylinder',   icon: '🛢️',  color: '#FF6B35', bg: '#FFF0EA' },
-  { id: 'municipal',   label: 'Municipal Tax',   icon: '🏛️',  color: '#5856D6', bg: '#F0EAFF' },
+const OPERATORS_MOBILE = ['Jio', 'Airtel', 'Vi', 'BSNL'];
+const OPERATORS_DTH = ['Tata Play', 'Dish TV', 'Airtel DTH', 'Sun Direct', 'D2H', 'Videocon D2H'];
+const FASTTAG_BANKS = ['HDFC Bank', 'ICICI Bank', 'Axis Bank', 'SBI', 'Paytm Payments Bank', 'IDFC FIRST', 'Kotak Mahindra'];
+
+const CIRCLES = [
+  'Delhi', 'Mumbai', 'Maharashtra', 'Karnataka', 'Tamil Nadu',
+  'Andhra Pradesh', 'Telangana', 'Gujarat', 'Rajasthan', 'Uttar Pradesh (East)',
+  'Uttar Pradesh (West)', 'Punjab', 'Haryana', 'West Bengal', 'Kerala',
+  'Madhya Pradesh', 'Odisha', 'Bihar', 'Jharkhand', 'Assam',
 ];
 
-const FINANCIAL_SERVICES = [
-  { id: 'credit_card', label: 'Credit Card\nBill',    icon: '💳', color: '#1C1C1E', bg: '#F5F5F5' },
-  { id: 'loan_emi',    label: 'Loan\nEMI',            icon: '🏦', color: '#007AFF', bg: '#EAF3FF' },
-  { id: 'insurance',   label: 'Insurance\nPremium',   icon: '🛡️', color: '#34C759', bg: '#EAFFF0' },
-  { id: 'invest',      label: 'Mutual Fund\nSIP',     icon: '📈', color: '#FF9500', bg: '#FFF6EA' },
+const ELECTRICITY_BILLERS: { name: string; state: string }[] = [
+  { name: 'BSES Rajdhani Power', state: 'Delhi' },
+  { name: 'BSES Yamuna Power', state: 'Delhi' },
+  { name: 'Tata Power Delhi', state: 'Delhi' },
+  { name: 'MSEDCL', state: 'Maharashtra' },
+  { name: 'BESCOM', state: 'Karnataka' },
+  { name: 'TNEB', state: 'Tamil Nadu' },
+  { name: 'APSPDCL', state: 'Andhra Pradesh' },
+  { name: 'TSSPDCL', state: 'Telangana' },
+  { name: 'DGVCL', state: 'Gujarat' },
+  { name: 'JVVNL', state: 'Rajasthan' },
+  { name: 'UPPCL', state: 'Uttar Pradesh' },
+  { name: 'PSPCL', state: 'Punjab' },
+  { name: 'DHBVN', state: 'Haryana' },
+  { name: 'CESC', state: 'West Bengal' },
+  { name: 'KSEB', state: 'Kerala' },
 ];
 
-const TRANSPORT_OTHERS = [
-  { id: 'fastag',        label: 'FASTag',          icon: '🛣️',  color: '#FF9500', bg: '#FFF6EA' },
-  { id: 'metro',         label: 'Metro Card',      icon: '🚇',  color: '#007AFF', bg: '#EAF3FF' },
-  { id: 'rent',          label: 'Rent Pay',        icon: '🏠',  color: '#5856D6', bg: '#F0EAFF' },
-  { id: 'education',     label: 'Education\nFees', icon: '🎓',  color: '#34C759', bg: '#EAFFF0' },
-  { id: 'housing',       label: 'Housing\nSociety',icon: '🏘️',  color: '#FF6B35', bg: '#FFF0EA' },
-  { id: 'subscription',  label: 'OTT / Streaming', icon: '🎬',  color: '#1C1C1E', bg: '#F5F5F5' },
-  { id: 'healthcare',    label: 'Healthcare',      icon: '🏥',  color: '#FF3B30', bg: '#FFEAEA' },
-  { id: 'donation',      label: 'Donation',        icon: '🤝',  color: '#34C759', bg: '#EAFFF0' },
-];
+const GAS_PROVIDERS = ['Mahanagar Gas (MGL)', 'Indraprastha Gas (IGL)', 'Gujarat Gas', 'Adani Gas', 'Torrent Gas', 'Sabarmati Gas'];
+const WATER_BOARDS = ['Delhi Jal Board', 'BWSSB (Bengaluru)', 'MCGM (Mumbai)', 'Chennai Metro Water', 'Hyderabad Metro Water'];
+const ISP_PROVIDERS = ['Jio Fiber', 'Airtel Xstream', 'BSNL Broadband', 'ACT Fibernet', 'Hathway', 'Den Networks', 'You Broadband'];
 
-// ─── Form Config per Category ─────────────────────────────────────────────────
-const FORM_CONFIG: Record<string, { title: string; fields: any[]; providers?: string[] }> = {
-  prepaid: {
-    title: 'Mobile Prepaid Recharge',
-    fields: [
-      { key: 'mobile', label: 'Mobile Number', placeholder: 'Enter 10-digit mobile number', keyboard: 'phone-pad', maxLen: 10 },
-      { key: 'amount', label: 'Amount (₹)', placeholder: 'Enter recharge amount', keyboard: 'numeric' },
-    ],
-    providers: ['Jio', 'Airtel', 'Vi (Vodafone Idea)', 'BSNL', 'MTNL'],
-  },
-  postpaid: {
-    title: 'Mobile Postpaid Bill Pay',
-    fields: [
-      { key: 'mobile', label: 'Mobile Number', placeholder: 'Enter 10-digit postpaid number', keyboard: 'phone-pad', maxLen: 10 },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['Jio Postpaid', 'Airtel Postpaid', 'Vi Postpaid', 'BSNL Postpaid'],
-  },
-  dth: {
-    title: 'DTH Recharge',
-    fields: [
-      { key: 'subscriber_id', label: 'Subscriber / Customer ID', placeholder: 'Enter your DTH subscriber ID', keyboard: 'numeric' },
-      { key: 'amount', label: 'Amount (₹)', placeholder: 'Enter recharge amount', keyboard: 'numeric' },
-    ],
-    providers: ['Tata Play (Tata Sky)', 'Dish TV', 'D2H (Videocon)', 'Sun Direct', 'Airtel DTH'],
-  },
-  electricity: {
-    title: 'Electricity Bill Payment',
-    fields: [
-      { key: 'consumer_no', label: 'Consumer / Account Number', placeholder: 'Enter consumer number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: [
-      'BSES Rajdhani', 'BSES Yamuna', 'Tata Power Mumbai', 'Adani Electricity',
-      'MSEDCL', 'UPPCL', 'KSEB Kerala', 'BESCOM Karnataka', 'CESC Kolkata',
-      'WBSEDCL', 'Torrent Power', 'Jaipur Discom', 'PSPCL Punjab',
-    ],
-  },
-  water: {
-    title: 'Water Bill Payment',
-    fields: [
-      { key: 'consumer_no', label: 'Consumer / Account Number', placeholder: 'Enter water board account number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['Delhi Jal Board', 'MCGM Mumbai Water', 'HMWSSB Hyderabad', 'BWSSB Bangalore', 'Chennai Metro Water'],
-  },
-  gas_piped: {
-    title: 'Piped Gas Bill Payment',
-    fields: [
-      { key: 'bp_no', label: 'BP Number / Customer ID', placeholder: 'Enter your BP / customer number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['IGL (Indraprastha Gas)', 'MGL (Mahanagar Gas)', 'Adani Gas', 'GAIL Gas', 'Gujarat Gas'],
-  },
-  broadband: {
-    title: 'Broadband / Internet Bill',
-    fields: [
-      { key: 'account_no', label: 'Account / Customer ID', placeholder: 'Enter your account number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['Airtel Xstream Fiber', 'Jio Fiber', 'ACT Fibernet', 'BSNL Broadband', 'Excitel', 'Hathway'],
-  },
-  landline: {
-    title: 'Landline Bill Payment',
-    fields: [
-      { key: 'phone_no', label: 'Landline Number (with STD code)', placeholder: 'e.g. 01123456789', keyboard: 'phone-pad' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['BSNL Landline', 'MTNL Mumbai', 'MTNL Delhi', 'Airtel Landline'],
-  },
-  cable_tv: {
-    title: 'Cable TV Bill Payment',
-    fields: [
-      { key: 'subscriber_id', label: 'Subscriber / Box ID', placeholder: 'Enter cable subscriber ID', keyboard: 'numeric' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['Hathway Digital', 'Den Networks', 'Siti Networks', 'In Cable', 'NXT Digital'],
-  },
-  gas_cylinder: {
-    title: 'LPG Cylinder Booking',
-    fields: [
-      { key: 'consumer_id', label: 'LPG Consumer ID', placeholder: 'Enter LPG consumer ID', keyboard: 'numeric' },
-      { key: 'amount', label: 'Cylinder Cost (₹)', placeholder: 'Enter amount', keyboard: 'numeric' },
-    ],
-    providers: ['HP Gas', 'Bharat Gas (BPCL)', 'Indane (IOC)'],
-  },
-  municipal: {
-    title: 'Municipal Tax / Property Tax',
-    fields: [
-      { key: 'property_id', label: 'Property / Assessment Number', placeholder: 'Enter property assessment number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Tax Amount (₹)', placeholder: 'Enter tax amount', keyboard: 'numeric' },
-    ],
-    providers: ['MCD Delhi', 'BBMP Bangalore', 'PMC Pune', 'MCGM Mumbai', 'KMC Kolkata'],
-  },
-  credit_card: {
-    title: 'Credit Card Bill Payment',
-    fields: [
-      { key: 'card_no', label: 'Last 4 Digits of Card', placeholder: 'Enter last 4 digits', keyboard: 'numeric', maxLen: 4 },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['HDFC Bank', 'ICICI Bank', 'SBI Card', 'Axis Bank', 'Kotak Mahindra', 'IndusInd Bank', 'AmEx'],
-  },
-  loan_emi: {
-    title: 'Loan EMI Payment',
-    fields: [
-      { key: 'loan_id', label: 'Loan Account Number', placeholder: 'Enter loan account number', keyboard: 'numeric' },
-      { key: 'amount', label: 'EMI Amount (₹)', placeholder: 'Enter EMI amount', keyboard: 'numeric' },
-    ],
-    providers: ['SBI', 'HDFC Bank', 'ICICI Bank', 'Bajaj Finance', 'Axis Bank', 'L&T Finance', 'Tata Capital'],
-  },
-  insurance: {
-    title: 'Insurance Premium Payment',
-    fields: [
-      { key: 'policy_no', label: 'Policy Number', placeholder: 'Enter insurance policy number', keyboard: 'default' },
-      { key: 'amount', label: 'Premium Amount (₹)', placeholder: 'Enter premium amount', keyboard: 'numeric' },
-    ],
-    providers: ['LIC', 'SBI Life', 'HDFC Life', 'Max Life', 'ICICI Prudential', 'Star Health', 'New India Assurance'],
-  },
-  invest: {
-    title: 'Mutual Fund SIP',
-    fields: [
-      { key: 'folio_no', label: 'Folio / SIP Number', placeholder: 'Enter folio number', keyboard: 'numeric' },
-      { key: 'amount', label: 'SIP Amount (₹)', placeholder: 'Enter monthly SIP amount', keyboard: 'numeric' },
-    ],
-    providers: ['SBI MF', 'HDFC MF', 'ICICI Pru MF', 'Nippon India MF', 'Mirae Asset', 'Axis MF'],
-  },
-  fastag: {
-    title: 'FASTag Recharge',
-    fields: [
-      { key: 'vehicle_no', label: 'Vehicle Registration Number', placeholder: 'e.g. DL01CA1234', keyboard: 'default', autoCapitalize: 'characters' },
-      { key: 'amount', label: 'Amount (₹)', placeholder: 'Enter recharge amount', keyboard: 'numeric' },
-    ],
-    providers: ['NHAI FASTag', 'HDFC Bank FASTag', 'ICICI Bank FASTag', 'Paytm FASTag', 'Axis Bank FASTag'],
-  },
-  metro: {
-    title: 'Metro Card Recharge',
-    fields: [
-      { key: 'card_no', label: 'Metro Card Number', placeholder: 'Enter your metro card number', keyboard: 'numeric' },
-      { key: 'amount', label: 'Amount (₹)', placeholder: 'Enter recharge amount', keyboard: 'numeric' },
-    ],
-    providers: ['Delhi Metro (DMRC)', 'Mumbai Metro', 'Bangalore Metro (BMRC)', 'Hyderabad Metro', 'Chennai Metro', 'Kolkata Metro'],
-  },
-  rent: {
-    title: 'Rent Pay via Bank Transfer',
-    fields: [
-      { key: 'landlord_name', label: "Landlord's Full Name", placeholder: 'Enter landlord name', keyboard: 'default' },
-      { key: 'account_no', label: 'Bank Account Number', placeholder: 'Enter bank account number', keyboard: 'numeric' },
-      { key: 'ifsc', label: 'IFSC Code', placeholder: 'e.g. SBIN0001234', keyboard: 'default', autoCapitalize: 'characters' },
-      { key: 'amount', label: 'Rent Amount (₹)', placeholder: 'Enter monthly rent', keyboard: 'numeric' },
-    ],
-    providers: [],
-  },
-  education: {
-    title: 'Education Fee Payment',
-    fields: [
-      { key: 'application_no', label: 'Application / Student ID', placeholder: 'Enter student or application ID', keyboard: 'default' },
-      { key: 'amount', label: 'Fee Amount (₹)', placeholder: 'Enter fee amount', keyboard: 'numeric' },
-    ],
-    providers: ['CBSE', 'ICSE / CISCE', 'University of Delhi', 'IIT / NIT Fees', 'Private School Fees'],
-  },
-  housing: {
-    title: 'Housing Society Maintenance',
-    fields: [
-      { key: 'flat_no', label: 'Flat / Unit Number', placeholder: 'e.g. A-204', keyboard: 'default' },
-      { key: 'amount', label: 'Maintenance Amount (₹)', placeholder: 'Enter maintenance charge', keyboard: 'numeric' },
-    ],
-    providers: ['MyGate', 'NoBrokerHood', 'Society maintenance portals'],
-  },
-  subscription: {
-    title: 'OTT / Streaming Subscription',
-    fields: [
-      { key: 'email', label: 'Registered Email / Mobile', placeholder: 'Enter email or mobile', keyboard: 'default' },
-      { key: 'amount', label: 'Plan Amount (₹)', placeholder: 'Enter subscription amount', keyboard: 'numeric' },
-    ],
-    providers: ['Netflix', 'Amazon Prime Video', 'Disney+ Hotstar', 'Sony LIV', 'Zee5', 'JioCinema', 'SunNXT', 'Voot Select'],
-  },
-  healthcare: {
-    title: 'Healthcare / Hospital Bill',
-    fields: [
-      { key: 'patient_id', label: 'Patient ID / UHID', placeholder: 'Enter patient ID', keyboard: 'default' },
-      { key: 'amount', label: 'Bill Amount (₹)', placeholder: 'Enter bill amount', keyboard: 'numeric' },
-    ],
-    providers: ['Apollo Hospitals', 'Fortis Healthcare', 'Max Healthcare', 'AIIMS', 'Manipal Hospital'],
-  },
-  donation: {
-    title: 'Donation / Charity',
-    fields: [
-      { key: 'donor_name', label: 'Donor Full Name', placeholder: 'Enter your name', keyboard: 'default' },
-      { key: 'amount', label: 'Donation Amount (₹)', placeholder: 'Enter donation amount', keyboard: 'numeric' },
-    ],
-    providers: ['PM CARES Fund', 'CRY India', 'Akshaya Patra', 'HelpAge India', 'Goonj', 'iDream Education'],
-  },
+// ─────────────────────────────────────────────────────────────────────────────
+// Operator Detection from Mobile Number Prefix
+// ─────────────────────────────────────────────────────────────────────────────
+
+const detectOperator = (num: string): string => {
+  if (num.length < 4) return '';
+  const p2 = num.slice(0, 2);
+  const p4 = num.slice(0, 4);
+  const jio2    = ['60','61','62','63','64','65','66','68','69','70','73','74','79'];
+  const airtel2 = ['72','78','80','81','82','83','84','85','86','87','88','89','90','91','92','93','94','95','98','99'];
+  const vi2     = ['75','76','77','96','97'];
+  const bsnl2   = ['71','94'];
+  if (jio2.includes(p2))    return 'Jio';
+  if (airtel2.includes(p2)) return 'Airtel';
+  if (vi2.includes(p2))     return 'Vi';
+  if (bsnl2.includes(p2))   return 'BSNL';
+  return 'Jio'; // default
 };
 
-// ─── Sub-Components ───────────────────────────────────────────────────────────
-const QuickActionCard = ({ item, onPress }: { item: any; onPress: () => void }) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.qaWrap}>
-    <LinearGradient
-      colors={item.grad}
-      style={styles.qaCard}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <Text style={styles.qaIcon}>{item.icon}</Text>
-    </LinearGradient>
-    <Text style={styles.qaLabel} numberOfLines={2}>{item.label}</Text>
-  </TouchableOpacity>
-);
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock Plan Data
+// ─────────────────────────────────────────────────────────────────────────────
 
-const GridItem = ({ item, onPress }: { item: any; onPress: () => void }) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.gridItem}>
-    <View style={[styles.gridIcon, { backgroundColor: item.bg }]}>
-      <Text style={styles.gridEmoji}>{item.icon}</Text>
-    </View>
-    <Text style={styles.gridLabel} numberOfLines={2}>{item.label}</Text>
-  </TouchableOpacity>
-);
+const PLANS_BY_OPERATOR: Record<string, Plan[]> = {
+  Jio: [
+    { id: 'j1', amount: 149,  validity: '24 days',  data: '1GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'j2', amount: 199,  validity: '28 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'j3', amount: 299,  validity: '28 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'popular' },
+    { id: 'j4', amount: 479,  validity: '56 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+    { id: 'j5', amount: 533,  validity: '84 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+    { id: 'j6', amount: 666,  validity: '84 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+    { id: 'j7', amount: 999,  validity: '84 days',  data: '3GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'OTT',        category: 'ott', description: 'Disney+ Hotstar included' },
+    { id: 'j8', amount: 2999, validity: '365 days', data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+    { id: 'j9', amount: 19,   validity: '1 day',    data: '1GB',        calls: 'Unlimited', sms: '100',                         category: 'talktime' },
+    { id: 'j10',amount: 75,   validity: 'No Limit', data: 'No Data',   calls: '₹75 Balance',sms: '—',                           category: 'talktime' },
+    { id: 'j11',amount: 601,  validity: '84 days',  data: '10GB Total',calls: 'Unlimited', sms: '100/day',                     category: 'data' },
+    { id: 'j12',amount: 151,  validity: '30 days',  data: '12GB Total',calls: 'Unlimited', sms: '100/day',                     category: 'data' },
+  ],
+  Airtel: [
+    { id: 'a1', amount: 179,  validity: '28 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'a2', amount: 239,  validity: '28 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'a3', amount: 299,  validity: '28 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'popular' },
+    { id: 'a4', amount: 359,  validity: '28 days',  data: '2.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'OTT',        category: 'ott', description: 'Disney+ Hotstar + Amazon Prime' },
+    { id: 'a5', amount: 509,  validity: '56 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+    { id: 'a6', amount: 699,  validity: '84 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+    { id: 'a7', amount: 3599, validity: '365 days', data: '2.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+    { id: 'a8', amount: 49,   validity: '28 days',  data: 'No Data',   calls: '₹49 Balance',sms: '—',                           category: 'talktime' },
+  ],
+  Vi: [
+    { id: 'v1', amount: 179,  validity: '28 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'v2', amount: 269,  validity: '28 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'v3', amount: 299,  validity: '28 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'popular' },
+    { id: 'v4', amount: 479,  validity: '56 days',  data: '1.5GB/day', calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+    { id: 'v5', amount: 601,  validity: '84 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+    { id: 'v6', amount: 1799, validity: '365 days', data: '2GB/day',   calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+  ],
+  BSNL: [
+    { id: 'b1', amount: 107,  validity: '30 days',  data: '1GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'b2', amount: 187,  validity: '30 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'POPULAR',    category: 'popular' },
+    { id: 'b3', amount: 247,  validity: '30 days',  data: '3GB/day',   calls: 'Unlimited', sms: '100/day',                     category: 'data' },
+    { id: 'b4', amount: 397,  validity: '60 days',  data: '2GB/day',   calls: 'Unlimited', sms: '100/day',                     category: 'validity' },
+    { id: 'b5', amount: 1999, validity: '365 days', data: '2GB/day',   calls: 'Unlimited', sms: '100/day',  tag: 'BEST VALUE', category: 'validity' },
+  ],
+};
 
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>{title}</Text>
+const PLAN_TABS = [
+  { key: 'popular',   label: 'Popular' },
+  { key: 'data',      label: 'Data' },
+  { key: 'validity',  label: 'Validity' },
+  { key: 'talktime',  label: 'Talktime' },
+  { key: 'ott',       label: 'OTT' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper components
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
+  <View style={s.sectionHeader}>
+    <Text style={s.sectionTitle}>{title}</Text>
+    {subtitle ? <Text style={s.sectionSubtitle}>{subtitle}</Text> : null}
   </View>
 );
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
-export const RechargeScreen: React.FC = () => {
-  const { user, setUser } = useAuthStore();
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState('');
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+const OperatorChip: React.FC<{
+  name: string; selected: boolean; onPress: () => void; color?: string;
+}> = ({ name, selected, onPress, color = '#1D6FEB' }) => (
+  <TouchableOpacity
+    style={[s.chip, selected && { backgroundColor: color, borderColor: color }]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <Text style={[s.chipText, selected && s.chipTextSelected]}>{name}</Text>
+  </TouchableOpacity>
+);
 
-  const config = selectedCat ? FORM_CONFIG[selectedCat] : null;
+// ─────────────────────────────────────────────────────────────────────────────
+// Plan Card
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const allCategories = [...BILL_PAYMENTS, ...FINANCIAL_SERVICES, ...TRANSPORT_OTHERS];
-  const filtered = searchQuery.trim()
-    ? allCategories.filter(c => c.label.toLowerCase().includes(searchQuery.toLowerCase()))
-    : null;
-
-  const handleSelect = (id: string) => {
-    setSelectedCat(id);
-    setSelectedProvider('');
-    setFormValues({});
-    setSearchQuery('');
-  };
-
-  const handleSubmit = () => {
-    if (!config) return;
-    const hasEmpty = config.fields.some(f => !formValues[f.key]?.trim());
-    if (hasEmpty) {
-      Toast.show({ type: 'error', text1: 'Incomplete Form', text2: 'Please fill in all required details' });
-      return;
-    }
-    if ((selectedCat === 'prepaid' || selectedCat === 'postpaid') && (formValues.mobile?.length !== 10)) {
-      Toast.show({ type: 'error', text1: 'Invalid Mobile', text2: 'Mobile number must be exactly 10 digits' });
-      return;
-    }
-    setModalVisible(true);
-  };
-
-  const handleConfirm = async () => {
-    setModalVisible(false);
-    setLoading(true);
-    try {
-      const payload = {
-        type: (selectedCat === 'prepaid' || selectedCat === 'postpaid' || selectedCat === 'dth') ? selectedCat : 'bbps',
-        operatorCode: selectedProvider || selectedCat?.toUpperCase() || 'BBPS',
-        accountNo: formValues.mobile || formValues.consumer_no || formValues.subscriber_id || formValues.account_no || formValues.card_no || formValues.vehicle_no || formValues.card_no || formValues.policy_no || formValues.loan_id || formValues.folio_no || formValues.flat_no || formValues.patient_id || formValues.donor_name || formValues.email || 'N/A',
-        circle: 'National',
-        amount: parseFloat(formValues.amount || '0'),
-      };
-      await rechargeService.initiateRecharge(payload);
-      Alert.alert('Payment Successful 🎉', `₹${formValues.amount} payment processed successfully!`);
-      setSelectedCat(null);
-      setFormValues({});
-      setSelectedProvider('');
-    } catch (err: any) {
-      Alert.alert('Payment Failed ❌', err?.response?.data?.message || 'Insufficient wallet balance or service unavailable.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── Bill Payment Form ────────────────────────────────────────────────────────
-  if (selectedCat && config) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
-        <StatusBar barStyle="dark-content" />
-
-        {/* Top header */}
-        <LinearGradient colors={['#FFFFFF', '#F2F2F7']} style={styles.formTopBar}>
-          <TouchableOpacity onPress={() => setSelectedCat(null)} style={styles.backCircle}>
-            <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.formTopTitle}>{config.title}</Text>
-          <View style={{ width: 36 }} />
-        </LinearGradient>
-
-        <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled">
-
-          {/* Provider Chips */}
-          {config.providers && config.providers.length > 0 && (
-            <View style={styles.formSection}>
-              <Text style={styles.fieldLabel}>Select Provider / Biller</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-                {config.providers.map(p => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => setSelectedProvider(p)}
-                    style={[styles.chip, selectedProvider === p && styles.chipActive]}
-                  >
-                    <Text style={[styles.chipText, selectedProvider === p && styles.chipTextActive]}>{p}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          {/* Dynamic Fields */}
-          <View style={styles.formSection}>
-            {config.fields.map(field => (
-              <View key={field.key} style={styles.fieldWrap}>
-                <Text style={styles.fieldLabel}>{field.label}</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  placeholder={field.placeholder}
-                  placeholderTextColor="#8E8E93"
-                  keyboardType={field.keyboard || 'default'}
-                  maxLength={field.maxLen}
-                  autoCapitalize={field.autoCapitalize || 'none'}
-                  value={formValues[field.key] || ''}
-                  onChangeText={t => setFormValues(prev => ({ ...prev, [field.key]: t }))}
-                />
-              </View>
-            ))}
-          </View>
-
-          {/* Pay Button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            activeOpacity={0.9}
-            style={styles.payBtnWrap}
-            disabled={loading}
-          >
-            <LinearGradient colors={['#007AFF', '#5AC8FA']} style={styles.payBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={styles.payBtnText}>
-                {loading ? 'Processing…' : `Pay ₹${formValues.amount || '0'}`}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </ScrollView>
-
-        <RechargeConfirmModal
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onConfirm={handleConfirm}
-          operator={selectedProvider || config.title}
-          accountNo={formValues.mobile || formValues.consumer_no || formValues.subscriber_id || formValues.account_no || formValues.vehicle_no || ''}
-          amount={parseFloat(formValues.amount || '0')}
-        />
+const PlanCard: React.FC<{
+  plan: Plan;
+  operatorColor: string;
+  onPress: () => void;
+}> = ({ plan, operatorColor, onPress }) => (
+  <TouchableOpacity style={s.planCard} onPress={onPress} activeOpacity={0.75}>
+    {plan.tag && (
+      <View style={[s.planTag, { backgroundColor: plan.tag === 'POPULAR' ? operatorColor : plan.tag === 'OTT' ? '#7C3AED' : '#059669' }]}>
+        <Text style={s.planTagText}>{plan.tag}</Text>
       </View>
-    );
-  }
-
-  // ── Category Hub ─────────────────────────────────────────────────────────────
-  return (
-    <View style={{ flex: 1, backgroundColor: '#F2F2F7' }}>
-      <StatusBar barStyle="dark-content" />
-      <ScrollView stickyHeaderIndices={[0]} contentContainerStyle={{ paddingBottom: 110 }}>
-
-        {/* Sticky Top Bar + Search */}
-        <View style={styles.topBar}>
-          <Text style={styles.hubTitle}>Recharge & Pay</Text>
-          <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search for services…"
-              placeholderTextColor="#8E8E93"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+    )}
+    <View style={s.planRow}>
+      {/* Amount */}
+      <View style={s.planAmtWrap}>
+        <Text style={[s.planAmt, { color: operatorColor }]}>₹{plan.amount}</Text>
+        <Text style={s.planValidity}>{plan.validity}</Text>
+      </View>
+      {/* Details */}
+      <View style={s.planDetails}>
+        <View style={s.planDetail}>
+          <Text style={s.planDetailIcon}>📶</Text>
+          <Text style={s.planDetailText}>{plan.data}</Text>
+        </View>
+        <View style={s.planDetail}>
+          <Text style={s.planDetailIcon}>📞</Text>
+          <Text style={s.planDetailText}>{plan.calls}</Text>
+        </View>
+        <View style={s.planDetail}>
+          <Text style={s.planDetailIcon}>💬</Text>
+          <Text style={s.planDetailText}>{plan.sms}</Text>
+        </View>
+        {plan.description ? (
+          <View style={s.planDetail}>
+            <Text style={s.planDetailIcon}>🎬</Text>
+            <Text style={[s.planDetailText, { color: '#7C3AED' }]}>{plan.description}</Text>
           </View>
+        ) : null}
+      </View>
+      {/* CTA */}
+      <TouchableOpacity
+        style={[s.planRechargeBtn, { backgroundColor: operatorColor }]}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <Text style={s.planRechargeBtnText}>Pay</Text>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bill Fetched Card
+// ─────────────────────────────────────────────────────────────────────────────
+
+const BillCard: React.FC<{ bill: BillInfo; color: string; onPay: () => void }> = ({ bill, color, onPay }) => (
+  <View style={s.billCard}>
+    <LinearGradient colors={[color, color + 'CC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.billCardGrad}>
+      <View style={[s.deco, { width: 160, height: 160, top: -50, right: -40 }]} />
+      <View style={[s.deco, { width: 90, height: 90, bottom: -20, left: -20 }]} />
+      <Text style={s.billCardLabel}>Bill Fetched Successfully</Text>
+      <Text style={s.billCardName}>{bill.consumerName}</Text>
+      <Text style={s.billCardConsumer}>{bill.consumerNo}</Text>
+      <View style={s.billCardRow}>
+        <View>
+          <Text style={s.billCardFieldLabel}>Amount Due</Text>
+          <Text style={s.billCardAmt}>₹{bill.billAmount.toFixed(2)}</Text>
+        </View>
+        <View style={s.billCardDivider} />
+        <View>
+          <Text style={s.billCardFieldLabel}>Due Date</Text>
+          <Text style={s.billCardDueDate}>{bill.dueDate}</Text>
+        </View>
+        <View style={s.billCardDivider} />
+        <View>
+          <Text style={s.billCardFieldLabel}>Period</Text>
+          <Text style={s.billCardPeriod}>{bill.billPeriod}</Text>
+        </View>
+      </View>
+    </LinearGradient>
+    {bill.extraInfo ? (
+      <View style={s.billExtraInfo}>
+        <Text style={s.billExtraText}>ℹ  {bill.extraInfo}</Text>
+      </View>
+    ) : null}
+    <TouchableOpacity style={[s.payNowBtn, { backgroundColor: color }]} onPress={onPay} activeOpacity={0.85}>
+      <Text style={s.payNowText}>Pay ₹{bill.billAmount.toFixed(2)} Now</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const RechargeScreen: React.FC = () => {
+  const [category, setCategory] = useState<Category>('mobile_prepaid');
+
+  // Mobile state
+  const [mobileNum, setMobileNum]         = useState('');
+  const [detectedOp, setDetectedOp]       = useState('');
+  const [selectedOp, setSelectedOp]       = useState('');
+  const [selectedCircle, setSelectedCircle] = useState('Delhi');
+  const [planTab, setPlanTab]             = useState('popular');
+  const [loadingPlans, setLoadingPlans]   = useState(false);
+  const [plans, setPlans]                 = useState<Plan[]>([]);
+  const [customAmount, setCustomAmount]   = useState('');
+
+  // Bill payment state
+  const [billProvider, setBillProvider]   = useState('');
+  const [accountNo, setAccountNo]         = useState('');
+  const [loadingBill, setLoadingBill]     = useState(false);
+  const [fetchedBill, setFetchedBill]     = useState<BillInfo | null>(null);
+
+  // DTH state
+  const [dthOperator, setDthOperator]     = useState('');
+  const [subscriberId, setSubscriberId]   = useState('');
+  const [dthPlans, setDthPlans]           = useState<Plan[]>([]);
+  const [loadingDth, setLoadingDth]       = useState(false);
+
+  // Rent state
+  const [rentAmount, setRentAmount]       = useState('');
+  const [landlordUpi, setLandlordUpi]     = useState('');
+  const [landlordName, setLandlordName]   = useState('');
+
+  // FASTag state
+  const [fastagBank, setFastagBank]       = useState('');
+  const [vehicleNo, setVehicleNo]         = useState('');
+  const [fastagAmt, setFastagAmt]         = useState('');
+
+  const cat = CATEGORIES.find((c) => c.id === category) ?? CATEGORIES[0];
+
+  // ── Mobile number change → auto detect operator ──────────────────────────
+  useEffect(() => {
+    if (mobileNum.length >= 4) {
+      const op = detectOperator(mobileNum);
+      setDetectedOp(op);
+      setSelectedOp(op);
+    } else {
+      setDetectedOp('');
+      setSelectedOp('');
+    }
+    // Clear plans when number changes
+    if (mobileNum.length < 10) setPlans([]);
+  }, [mobileNum]);
+
+  // Auto-fetch plans when number is complete
+  useEffect(() => {
+    if (mobileNum.length === 10 && selectedOp && category === 'mobile_prepaid') {
+      fetchPlans();
+    }
+  }, [mobileNum, selectedOp]);
+
+  // ── Fetch plans ───────────────────────────────────────────────────────────
+  const fetchPlans = useCallback(() => {
+    if (!selectedOp) return;
+    setLoadingPlans(true);
+    setTimeout(() => {
+      const data = PLANS_BY_OPERATOR[selectedOp] ?? [];
+      setPlans(data);
+      setLoadingPlans(false);
+    }, 900);
+  }, [selectedOp]);
+
+  // ── Fetch bill ────────────────────────────────────────────────────────────
+  const fetchBill = useCallback(() => {
+    if (!accountNo.trim()) {
+      Toast.show({ type: 'error', text1: 'Enter account/consumer number' });
+      return;
+    }
+    if (!billProvider && category !== 'rent') {
+      Toast.show({ type: 'error', text1: 'Select a service provider' });
+      return;
+    }
+    setLoadingBill(true);
+    setFetchedBill(null);
+    setTimeout(() => {
+      // Mock bill data
+      const mockBills: Record<Category, BillInfo> = {
+        mobile_postpaid: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 649,
+          dueDate: '10 Jul 2026',
+          billPeriod: 'Jun 2026',
+          consumerNo: mobileNum || accountNo,
+          extraInfo: 'Autopay not active. Enable to avoid late fees.',
+        },
+        electricity: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 1240,
+          dueDate: '5 Jul 2026',
+          billPeriod: 'Apr–May 2026',
+          consumerNo: accountNo,
+          extraInfo: 'Units consumed: 210 kWh',
+        },
+        water: {
+          consumerName: 'Sharma Residence',
+          billAmount: 480,
+          dueDate: '15 Jul 2026',
+          billPeriod: 'Q1 2026',
+          consumerNo: accountNo,
+        },
+        gas: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 920,
+          dueDate: '20 Jul 2026',
+          billPeriod: 'Jun 2026',
+          consumerNo: accountNo,
+          extraInfo: 'Current gas rate: ₹52.50/SCM',
+        },
+        broadband: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 999,
+          dueDate: '1 Jul 2026',
+          billPeriod: 'Jul 2026',
+          consumerNo: accountNo,
+          extraInfo: 'Plan: 300 Mbps Unlimited',
+        },
+        insurance: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 4820,
+          dueDate: '15 Jul 2026',
+          billPeriod: 'Annual Premium',
+          consumerNo: accountNo,
+          extraInfo: 'Policy: Term Life Insurance',
+        },
+        loan: {
+          consumerName: 'Rahul Sharma',
+          billAmount: 12500,
+          dueDate: '5 Jul 2026',
+          billPeriod: 'Jul 2026 EMI',
+          consumerNo: accountNo,
+          extraInfo: 'Outstanding balance: ₹3,42,800',
+        },
+        credit_card: {
+          consumerName: 'RAHUL SHARMA',
+          billAmount: 8750,
+          dueDate: '18 Jul 2026',
+          billPeriod: 'Jun 2026 Statement',
+          consumerNo: accountNo,
+          extraInfo: 'Minimum due: ₹875. Pay full to avoid interest.',
+        },
+        mobile_prepaid: { consumerName: '', billAmount: 0, dueDate: '', billPeriod: '', consumerNo: '' },
+        dth:            { consumerName: '', billAmount: 0, dueDate: '', billPeriod: '', consumerNo: '' },
+        rent:           { consumerName: '', billAmount: 0, dueDate: '', billPeriod: '', consumerNo: '' },
+        fasttag:        { consumerName: '', billAmount: 0, dueDate: '', billPeriod: '', consumerNo: '' },
+      };
+      setFetchedBill(mockBills[category] ?? null);
+      setLoadingBill(false);
+    }, 1100);
+  }, [accountNo, billProvider, category, mobileNum]);
+
+  // ── Fetch DTH plans ───────────────────────────────────────────────────────
+  const fetchDthPlans = useCallback(() => {
+    if (!subscriberId.trim() || !dthOperator) {
+      Toast.show({ type: 'error', text1: 'Enter subscriber ID and select operator' });
+      return;
+    }
+    setLoadingDth(true);
+    setTimeout(() => {
+      setDthPlans([
+        { id: 'd1', amount: 149, validity: '1 Month',  data: 'Basic Pack',   calls: '130 SD Channels', sms: '', tag: 'POPULAR', category: 'popular' },
+        { id: 'd2', amount: 299, validity: '1 Month',  data: 'Platinum HD',  calls: '250 HD Channels', sms: '', tag: 'BEST VALUE', category: 'popular' },
+        { id: 'd3', amount: 499, validity: '1 Month',  data: 'Sports Pack',  calls: '300 Channels + Sports', sms: '', tag: 'OTT', category: 'ott', description: 'Disney+ Hotstar included' },
+        { id: 'd4', amount: 799, validity: '2 Months', data: 'Premium Pack', calls: 'All Channels',    sms: '', tag: 'BEST VALUE', category: 'validity' },
+      ]);
+      setLoadingDth(false);
+    }, 1000);
+  }, [subscriberId, dthOperator]);
+
+  // ── Handle pay ────────────────────────────────────────────────────────────
+  const handlePay = (amount: number, description: string) => {
+    Alert.alert(
+      'Confirm Payment',
+      `Pay ₹${amount.toFixed(2)} for ${description}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: `Pay ₹${amount.toFixed(2)}`,
+          style: 'default',
+          onPress: () => {
+            Toast.show({ type: 'success', text1: '✅ Recharge Initiated!', text2: `₹${amount} payment processing…` });
+            // Reset
+            setFetchedBill(null);
+            setAccountNo('');
+          },
+        },
+      ],
+    );
+  };
+
+  // ── Reset on category change ──────────────────────────────────────────────
+  const switchCategory = (cat: Category) => {
+    setCategory(cat);
+    setMobileNum('');
+    setDetectedOp('');
+    setSelectedOp('');
+    setPlans([]);
+    setAccountNo('');
+    setBillProvider('');
+    setFetchedBill(null);
+    setDthOperator('');
+    setSubscriberId('');
+    setDthPlans([]);
+    setCustomAmount('');
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Filtered plans
+  // ─────────────────────────────────────────────────────────────────────────
+  const filteredPlans = plans.filter((p) => p.category === planTab);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+  return (
+    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <StatusBar barStyle="light-content" />
+
+      {/* ══ HEADER ══ */}
+      <LinearGradient
+        colors={[cat.color + 'F2', cat.color + 'CC', cat.color + '99']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={s.header}
+      >
+        <Text style={s.headerTitle}>Recharge & Pay</Text>
+        <Text style={s.headerSub}>Bills · Recharge · Utilities</Text>
+      </LinearGradient>
+
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ══ CATEGORY GRID ══ */}
+        <View style={s.categoryGrid}>
+          {CATEGORIES.map((c) => {
+            const active = category === c.id;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                style={[s.categoryItem, active && { backgroundColor: c.color + '18', borderColor: c.color }]}
+                onPress={() => switchCategory(c.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={s.categoryEmoji}>{c.emoji}</Text>
+                <Text style={[s.categoryLabel, active && { color: c.color, fontWeight: '700' }]}>
+                  {c.label}
+                </Text>
+                {active && <View style={[s.categoryActiveDot, { backgroundColor: c.color }]} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Search Results */}
-        {filtered && (
-          <View style={styles.gridWrap}>
-            {filtered.length === 0
-              ? <Text style={styles.noResult}>No service found</Text>
-              : filtered.map(item => (
-                  <GridItem key={item.id} item={item} onPress={() => handleSelect(item.id)} />
-                ))
-            }
+        {/* ══ MOBILE PREPAID ══ */}
+        {category === 'mobile_prepaid' && (
+          <View style={s.section}>
+            <SectionHeader title="Mobile Prepaid" subtitle="Auto-detects operator & fetches plans" />
+
+            {/* Number input */}
+            <View style={s.phoneInputWrap}>
+              <View style={s.phonePrefix}><Text style={s.phonePrefixText}>+91</Text></View>
+              <TextInput
+                style={s.phoneInput}
+                value={mobileNum}
+                onChangeText={(t) => setMobileNum(t.replace(/\D/g, '').slice(0, 10))}
+                placeholder="Enter 10-digit mobile number"
+                placeholderTextColor="#AEAEB2"
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+              {mobileNum.length === 10 && (
+                <View style={s.phoneTick}><Text>✓</Text></View>
+              )}
+            </View>
+
+            {/* Auto-detected operator */}
+            {detectedOp !== '' && (
+              <View style={s.detectedRow}>
+                <Text style={s.detectedLabel}>Detected Operator:</Text>
+                <View style={[s.detectedBadge, { backgroundColor: cat.color + '18' }]}>
+                  <Text style={[s.detectedBadgeText, { color: cat.color }]}>{detectedOp}</Text>
+                </View>
+                <Text style={s.detectedChangeHint}>  ·  Change below</Text>
+              </View>
+            )}
+
+            {/* Operator override chips */}
+            {mobileNum.length >= 4 && (
+              <>
+                <Text style={s.fieldLabel}>Operator</Text>
+                <View style={s.chipRow}>
+                  {OPERATORS_MOBILE.map((op) => (
+                    <OperatorChip
+                      key={op}
+                      name={op}
+                      selected={selectedOp === op}
+                      onPress={() => { setSelectedOp(op); setPlans([]); }}
+                      color={cat.color}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Circle picker */}
+            {mobileNum.length >= 4 && (
+              <>
+                <Text style={s.fieldLabel}>Circle</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.circleScroll}>
+                  {CIRCLES.map((c) => (
+                    <OperatorChip
+                      key={c}
+                      name={c}
+                      selected={selectedCircle === c}
+                      onPress={() => setSelectedCircle(c)}
+                      color={cat.color}
+                    />
+                  ))}
+                </ScrollView>
+              </>
+            )}
+
+            {/* Loading plans */}
+            {loadingPlans && (
+              <View style={s.loadingWrap}>
+                <ActivityIndicator color={cat.color} size="small" />
+                <Text style={[s.loadingText, { color: cat.color }]}>Fetching latest plans…</Text>
+              </View>
+            )}
+
+            {/* Plans */}
+            {plans.length > 0 && !loadingPlans && (
+              <>
+                {/* Plan tabs */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.planTabsScroll}>
+                  {PLAN_TABS.map((t) => (
+                    <TouchableOpacity
+                      key={t.key}
+                      style={[s.planTab, planTab === t.key && { backgroundColor: cat.color, borderColor: cat.color }]}
+                      onPress={() => setPlanTab(t.key)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[s.planTabText, planTab === t.key && s.planTabTextActive]}>{t.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {filteredPlans.length === 0 ? (
+                  <Text style={s.noPlansText}>No plans in this category</Text>
+                ) : (
+                  filteredPlans.map((plan) => (
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      operatorColor={cat.color}
+                      onPress={() => handlePay(plan.amount, `${selectedOp} ${plan.validity} Prepaid`)}
+                    />
+                  ))
+                )}
+
+                {/* Custom recharge */}
+                <View style={s.customRechargeWrap}>
+                  <Text style={s.fieldLabel}>Or enter custom amount</Text>
+                  <View style={s.customRow}>
+                    <View style={s.customInputWrap}>
+                      <Text style={s.customRupee}>₹</Text>
+                      <TextInput
+                        style={s.customInput}
+                        value={customAmount}
+                        onChangeText={setCustomAmount}
+                        placeholder="Enter amount"
+                        placeholderTextColor="#AEAEB2"
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                    <TouchableOpacity
+                      style={[s.customPayBtn, { backgroundColor: cat.color }]}
+                      onPress={() => {
+                        const amt = parseFloat(customAmount);
+                        if (!amt || amt < 10) { Toast.show({ type: 'error', text1: 'Minimum recharge is ₹10' }); return; }
+                        handlePay(amt, `${selectedOp} Custom Recharge`);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={s.customPayBtnText}>Recharge</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         )}
 
-        {!filtered && (
-          <>
-            {/* Quick Actions Row */}
-            <SectionHeader title="Quick Recharge" />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.qaRow}>
-              {QUICK_ACTIONS.map(item => (
-                <QuickActionCard key={item.id} item={item} onPress={() => handleSelect(item.id)} />
+        {/* ══ MOBILE POSTPAID ══ */}
+        {category === 'mobile_postpaid' && (
+          <View style={s.section}>
+            <SectionHeader title="Postpaid Bill" subtitle="Enter your number to fetch outstanding bill" />
+            <View style={s.phoneInputWrap}>
+              <View style={s.phonePrefix}><Text style={s.phonePrefixText}>+91</Text></View>
+              <TextInput
+                style={s.phoneInput}
+                value={accountNo}
+                onChangeText={(t) => { setAccountNo(t.replace(/\D/g, '').slice(0, 10)); setFetchedBill(null); }}
+                placeholder="10-digit postpaid number"
+                placeholderTextColor="#AEAEB2"
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+            </View>
+            <Text style={s.fieldLabel}>Operator</Text>
+            <View style={s.chipRow}>
+              {OPERATORS_MOBILE.map((op) => (
+                <OperatorChip key={op} name={op} selected={billProvider === op} onPress={() => { setBillProvider(op); setFetchedBill(null); }} color="#7C3AED" />
+              ))}
+            </View>
+            {!fetchedBill && (
+              <TouchableOpacity
+                style={[s.fetchBtn, { backgroundColor: '#7C3AED', opacity: accountNo.length === 10 && billProvider ? 1 : 0.45 }]}
+                onPress={fetchBill}
+                disabled={accountNo.length < 10 || !billProvider || loadingBill}
+                activeOpacity={0.85}
+              >
+                {loadingBill
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={s.fetchBtnText}>Fetch Bill</Text>
+                }
+              </TouchableOpacity>
+            )}
+            {fetchedBill && (
+              <BillCard bill={fetchedBill} color="#7C3AED" onPay={() => handlePay(fetchedBill.billAmount, `${billProvider} Postpaid`)} />
+            )}
+          </View>
+        )}
+
+        {/* ══ DTH ══ */}
+        {category === 'dth' && (
+          <View style={s.section}>
+            <SectionHeader title="DTH Recharge" subtitle="Enter your subscriber ID to see recharge packs" />
+            <Text style={s.fieldLabel}>Select DTH Operator</Text>
+            <View style={s.chipRow}>
+              {OPERATORS_DTH.map((op) => (
+                <OperatorChip key={op} name={op} selected={dthOperator === op} onPress={() => { setDthOperator(op); setDthPlans([]); }} color="#D97B00" />
+              ))}
+            </View>
+            <Text style={s.fieldLabel}>Subscriber / Customer ID</Text>
+            <TextInput
+              style={s.inputField}
+              value={subscriberId}
+              onChangeText={(t) => { setSubscriberId(t); setDthPlans([]); }}
+              placeholder="Enter your DTH subscriber ID"
+              placeholderTextColor="#AEAEB2"
+              keyboardType="number-pad"
+            />
+            {dthPlans.length === 0 && (
+              <TouchableOpacity
+                style={[s.fetchBtn, { backgroundColor: '#D97B00', opacity: subscriberId.length >= 6 && dthOperator ? 1 : 0.45 }]}
+                onPress={fetchDthPlans}
+                disabled={subscriberId.length < 6 || !dthOperator || loadingDth}
+                activeOpacity={0.85}
+              >
+                {loadingDth
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={s.fetchBtnText}>Show Recharge Packs</Text>
+                }
+              </TouchableOpacity>
+            )}
+            {dthPlans.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                operatorColor="#D97B00"
+                onPress={() => handlePay(plan.amount, `${dthOperator} DTH Recharge`)}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* ══ ELECTRICITY / WATER / GAS / BROADBAND / INSURANCE / LOAN / CREDIT CARD ══ */}
+        {(['electricity', 'water', 'gas', 'broadband', 'insurance', 'loan', 'credit_card'] as Category[]).includes(category) && (
+          <View style={s.section}>
+            <SectionHeader
+              title={cat.label.replace('\n', ' ')}
+              subtitle="Select provider, enter account number to fetch bill"
+            />
+
+            {/* Provider chips */}
+            <Text style={s.fieldLabel}>
+              {category === 'electricity' ? 'Select Electricity Board' :
+               category === 'water' ? 'Select Water Board' :
+               category === 'gas' ? 'Select Gas Provider' :
+               category === 'broadband' ? 'Select ISP' :
+               category === 'insurance' ? 'Select Insurance Company' :
+               category === 'loan' ? 'Select Lender' :
+               'Select Bank / Card Issuer'}
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.providerScroll}>
+              {(category === 'electricity' ? ELECTRICITY_BILLERS.map((b) => b.name) :
+                category === 'water' ? WATER_BOARDS :
+                category === 'gas' ? GAS_PROVIDERS :
+                category === 'broadband' ? ISP_PROVIDERS :
+                category === 'insurance' ? ['LIC', 'HDFC Life', 'ICICI Prudential', 'SBI Life', 'Max Life', 'Bajaj Allianz'] :
+                category === 'loan' ? ['HDFC Bank', 'SBI', 'ICICI Bank', 'Axis Bank', 'Bajaj Finance', 'Home Credit', 'L&T Finance'] :
+                ['HDFC Credit Card', 'ICICI Credit Card', 'SBI Card', 'Axis Credit Card', 'Kotak Credit Card', 'American Express']
+              ).map((p) => (
+                <OperatorChip
+                  key={p}
+                  name={p}
+                  selected={billProvider === p}
+                  onPress={() => { setBillProvider(p); setFetchedBill(null); }}
+                  color={cat.color}
+                />
               ))}
             </ScrollView>
 
-            {/* Bill Payments */}
-            <SectionHeader title="Utility Bill Payments" />
-            <View style={styles.gridWrap}>
-              {BILL_PAYMENTS.map(item => (
-                <GridItem key={item.id} item={item} onPress={() => handleSelect(item.id)} />
-              ))}
-            </View>
+            {/* Account / Consumer number */}
+            <Text style={s.fieldLabel}>
+              {category === 'electricity' ? 'Consumer / Account Number' :
+               category === 'water' ? 'Consumer / Account Number' :
+               category === 'gas' ? 'BP (Business Partner) Number' :
+               category === 'broadband' ? 'Account / Customer ID' :
+               category === 'insurance' ? 'Policy Number' :
+               category === 'loan' ? 'Loan Account Number' :
+               'Credit Card Number (last 4 digits or full)'}
+            </Text>
+            <TextInput
+              style={s.inputField}
+              value={accountNo}
+              onChangeText={(t) => { setAccountNo(t.trim()); setFetchedBill(null); }}
+              placeholder={
+                category === 'electricity' ? 'e.g. 1004859302' :
+                category === 'water' ? 'e.g. DJB-9485903' :
+                category === 'gas' ? 'e.g. 700012345' :
+                'Enter your account number'
+              }
+              placeholderTextColor="#AEAEB2"
+              keyboardType={['insurance', 'broadband'].includes(category) ? 'default' : 'number-pad'}
+            />
 
-            {/* Financial */}
-            <SectionHeader title="Financial Services" />
-            <View style={styles.gridWrap}>
-              {FINANCIAL_SERVICES.map(item => (
-                <GridItem key={item.id} item={item} onPress={() => handleSelect(item.id)} />
-              ))}
-            </View>
+            {!fetchedBill && (
+              <TouchableOpacity
+                style={[s.fetchBtn, { backgroundColor: cat.color, opacity: accountNo.length >= 4 && billProvider ? 1 : 0.45 }]}
+                onPress={fetchBill}
+                disabled={accountNo.length < 4 || !billProvider || loadingBill}
+                activeOpacity={0.85}
+              >
+                {loadingBill
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={s.fetchBtnText}>Fetch Bill Details</Text>
+                }
+              </TouchableOpacity>
+            )}
 
-            {/* Transport & Others */}
-            <SectionHeader title="Travel, Rent & More" />
-            <View style={styles.gridWrap}>
-              {TRANSPORT_OTHERS.map(item => (
-                <GridItem key={item.id} item={item} onPress={() => handleSelect(item.id)} />
-              ))}
-            </View>
-          </>
+            {fetchedBill && (
+              <BillCard
+                bill={fetchedBill}
+                color={cat.color}
+                onPay={() => handlePay(fetchedBill.billAmount, `${billProvider}`)}
+              />
+            )}
+          </View>
         )}
+
+        {/* ══ RENT ══ */}
+        {category === 'rent' && (
+          <View style={s.section}>
+            <SectionHeader title="Rent Payment" subtitle="Pay rent directly to your landlord via UPI" />
+            <Text style={s.fieldLabel}>Landlord / Owner Name</Text>
+            <TextInput style={s.inputField} value={landlordName} onChangeText={setLandlordName} placeholder="e.g. Ramesh Gupta" placeholderTextColor="#AEAEB2" />
+            <Text style={s.fieldLabel}>Landlord UPI ID</Text>
+            <TextInput style={s.inputField} value={landlordUpi} onChangeText={setLandlordUpi} placeholder="e.g. landlord@upi" placeholderTextColor="#AEAEB2" autoCapitalize="none" keyboardType="email-address" />
+            <Text style={s.fieldLabel}>Rent Amount</Text>
+            <View style={s.customRow}>
+              <View style={[s.customInputWrap, { flex: 1 }]}>
+                <Text style={s.customRupee}>₹</Text>
+                <TextInput style={s.customInput} value={rentAmount} onChangeText={setRentAmount} placeholder="Monthly rent amount" placeholderTextColor="#AEAEB2" keyboardType="number-pad" />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[s.fetchBtn, { backgroundColor: '#059669', opacity: rentAmount && landlordUpi && landlordName ? 1 : 0.45 }]}
+              onPress={() => {
+                const amt = parseFloat(rentAmount);
+                if (!amt) { Toast.show({ type: 'error', text1: 'Enter rent amount' }); return; }
+                handlePay(amt, `Rent to ${landlordName}`);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={s.fetchBtnText}>Pay Rent ₹{rentAmount || '0'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ══ FASTTAG ══ */}
+        {category === 'fasttag' && (
+          <View style={s.section}>
+            <SectionHeader title="FASTag Recharge" subtitle="Select your FASTag bank and enter vehicle number" />
+            <Text style={s.fieldLabel}>FASTag Issuer Bank</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.providerScroll}>
+              {FASTTAG_BANKS.map((b) => (
+                <OperatorChip key={b} name={b} selected={fastagBank === b} onPress={() => setFastagBank(b)} color="#64748B" />
+              ))}
+            </ScrollView>
+            <Text style={s.fieldLabel}>Vehicle Registration Number</Text>
+            <TextInput
+              style={s.inputField}
+              value={vehicleNo}
+              onChangeText={(t) => setVehicleNo(t.toUpperCase())}
+              placeholder="e.g. DL5CAB1234"
+              placeholderTextColor="#AEAEB2"
+              autoCapitalize="characters"
+            />
+            <Text style={s.fieldLabel}>Recharge Amount</Text>
+            <View style={s.customRow}>
+              <View style={[s.customInputWrap, { flex: 1 }]}>
+                <Text style={s.customRupee}>₹</Text>
+                <TextInput style={s.customInput} value={fastagAmt} onChangeText={setFastagAmt} placeholder="Min ₹100" placeholderTextColor="#AEAEB2" keyboardType="number-pad" />
+              </View>
+            </View>
+            {/* Quick amount chips */}
+            <View style={s.chipRow}>
+              {[100, 200, 500, 1000].map((a) => (
+                <OperatorChip key={a} name={`₹${a}`} selected={fastagAmt === String(a)} onPress={() => setFastagAmt(String(a))} color="#64748B" />
+              ))}
+            </View>
+            <TouchableOpacity
+              style={[s.fetchBtn, { backgroundColor: '#64748B', opacity: fastagAmt && vehicleNo && fastagBank ? 1 : 0.45 }]}
+              onPress={() => {
+                const amt = parseFloat(fastagAmt);
+                if (!amt || amt < 100) { Toast.show({ type: 'error', text1: 'Minimum FASTag recharge is ₹100' }); return; }
+                handlePay(amt, `FASTag ${vehicleNo}`);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={s.fetchBtnText}>Recharge FASTag</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={{ height: 120 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  // Hub
-  topBar: {
-    backgroundColor: '#F2F2F7',
-    paddingTop: Platform.OS === 'ios' ? 56 : 40,
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root:  { flex: 1, backgroundColor: '#F2F2F7' },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 20 },
+
+  // Header
+  header: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 42,
+    paddingBottom: 20,
     paddingHorizontal: 20,
-    paddingBottom: 12,
-    zIndex: 10,
   },
-  hubTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1C1C1E',
-    letterSpacing: -0.8,
-    marginBottom: 14,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 44,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: '#1C1C1E' },
-  noResult: { textAlign: 'center', color: '#8E8E93', marginTop: 40, fontSize: 14 },
+  headerTitle: { fontSize: 26, fontWeight: '900', color: '#FFFFFF', letterSpacing: -0.6 },
+  headerSub:   { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
 
-  // Section Header
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1C1C1E',
-    letterSpacing: -0.4,
-  },
-
-  // Quick Actions
-  qaRow: { paddingLeft: 20, paddingRight: 4, marginBottom: 4 },
-  qaWrap: { alignItems: 'center', marginRight: 16, width: 80 },
-  qaCard: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  qaIcon: { fontSize: 26 },
-  qaLabel: { fontSize: 11, fontWeight: '700', color: '#3C3C43', textAlign: 'center', lineHeight: 14 },
-
-  // Grid
-  gridWrap: {
+  // Category grid
+  categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 4,
     gap: 8,
   },
-  gridItem: {
-    width: ITEM_WIDTH,
-    alignItems: 'center',
+  categoryItem: {
+    width: '22%',
+    aspectRatio: 0.9,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 6,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+    position: 'relative',
   },
-  gridIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+  categoryEmoji: { fontSize: 24, marginBottom: 4 },
+  categoryLabel: {
+    fontSize: 9.5,
+    fontWeight: '600',
+    color: '#6E6E73',
+    textAlign: 'center',
+    lineHeight: 13,
   },
-  gridEmoji: { fontSize: 22 },
-  gridLabel: { fontSize: 11, fontWeight: '700', color: '#3C3C43', textAlign: 'center', lineHeight: 14 },
+  categoryActiveDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
 
-  // Form
-  formTopBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 60 : 44,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(60,60,67,0.1)',
-  },
-  backCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backArrow: { fontSize: 16, color: '#1C1C1E', fontWeight: '600' },
-  formTopTitle: { fontSize: 16, fontWeight: '800', color: '#1C1C1E', flex: 1, textAlign: 'center', letterSpacing: -0.3, marginHorizontal: 8 },
-  formScroll: { padding: 20, gap: 16, paddingBottom: 80 },
-  formSection: {
+  // Section
+  section: {
+    marginHorizontal: 16,
+    marginTop: 16,
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
-    gap: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  sectionHeader: { marginBottom: 16 },
+  sectionTitle:  { fontSize: 18, fontWeight: '800', color: '#1C1C1E', letterSpacing: -0.4 },
+  sectionSubtitle: { fontSize: 12, color: '#8E8E93', marginTop: 3 },
+
+  // Phone input
+  phoneInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(60,60,67,0.12)',
+    borderRadius: 14,
+    backgroundColor: '#F8F8FA',
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  phonePrefix: {
+    paddingHorizontal: 14,
+    paddingVertical: 15,
+    backgroundColor: '#EFEFEF',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(60,60,67,0.1)',
+  },
+  phonePrefixText: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  phoneInput: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    paddingHorizontal: 14,
+    paddingVertical: 15,
+    letterSpacing: 1,
+  },
+  phoneTick: { paddingRight: 14 },
+
+  // Detected operator
+  detectedRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 6 },
+  detectedLabel: { fontSize: 13, color: '#6E6E73', fontWeight: '500' },
+  detectedBadge: { borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  detectedBadgeText: { fontSize: 12, fontWeight: '700' },
+  detectedChangeHint: { fontSize: 11, color: '#AEAEB2' },
+
+  // Field label
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6E6E73',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginTop: 8,
   },
 
-  // Provider Chips
+  // Chips
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   chip: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#F2F2F7',
-    marginRight: 8,
     borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderColor: 'rgba(60,60,67,0.15)',
+    backgroundColor: '#F8F8FA',
   },
-  chipActive: { backgroundColor: 'rgba(0, 122, 255, 0.08)', borderColor: '#007AFF' },
   chipText: { fontSize: 13, fontWeight: '600', color: '#3C3C43' },
-  chipTextActive: { color: '#007AFF', fontWeight: '700' },
+  chipTextSelected: { color: '#FFFFFF', fontWeight: '700' },
 
-  // Fields
-  fieldWrap: { gap: 8 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: '#8E8E93', letterSpacing: 0.3 },
-  fieldInput: {
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
+  // Circle scroll
+  circleScroll: { marginBottom: 8 },
+
+  // Provider scroll
+  providerScroll: { marginBottom: 8 },
+
+  // Generic input field
+  inputField: {
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#F8F8FA',
+    borderWidth: 1.5,
+    borderColor: 'rgba(60,60,67,0.12)',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '500',
     color: '#1C1C1E',
-    fontWeight: '600',
+    marginBottom: 14,
   },
 
-  // Pay Button
-  payBtnWrap: { marginTop: 8 },
-  payBtn: {
-    height: 56,
-    borderRadius: 28,
+  // Fetch / action button
+  fetchBtn: {
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+    marginTop: 8,
+    marginBottom: 8,
   },
-  payBtnText: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.3 },
+  fetchBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+
+  // Loading
+  loadingWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 16 },
+  loadingText: { fontSize: 14, fontWeight: '600' },
+
+  // Plan tabs
+  planTabsScroll: { marginBottom: 14, marginTop: 4 },
+  planTab: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(60,60,67,0.12)',
+    backgroundColor: '#F8F8FA',
+    marginRight: 8,
+  },
+  planTabText: { fontSize: 13, fontWeight: '600', color: '#6E6E73' },
+  planTabTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  noPlansText: { fontSize: 14, color: '#AEAEB2', textAlign: 'center', paddingVertical: 20 },
+
+  // Plan card
+  planCard: {
+    backgroundColor: '#F8F8FA',
+    borderRadius: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(60,60,67,0.08)',
+    position: 'relative',
+  },
+  planTag: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderTopRightRadius: 16,
+    borderBottomLeftRadius: 10,
+  },
+  planTagText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  planAmtWrap: { minWidth: 64, alignItems: 'flex-start' },
+  planAmt: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  planValidity: { fontSize: 11, color: '#8E8E93', fontWeight: '500', marginTop: 2 },
+  planDetails: { flex: 1, gap: 4 },
+  planDetail: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  planDetailIcon: { fontSize: 11, width: 16 },
+  planDetailText: { fontSize: 12, color: '#3C3C43', fontWeight: '500', flex: 1 },
+  planRechargeBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 },
+  planRechargeBtnText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
+
+  // Custom recharge
+  customRechargeWrap: { marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(60,60,67,0.1)' },
+  customRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  customInputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#F8F8FA',
+    borderWidth: 1.5,
+    borderColor: 'rgba(60,60,67,0.12)',
+    paddingHorizontal: 14,
+  },
+  customRupee: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginRight: 4 },
+  customInput: { flex: 1, fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
+  customPayBtn: { height: 52, paddingHorizontal: 22, borderRadius: 26, justifyContent: 'center', alignItems: 'center' },
+  customPayBtnText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+
+  // Bill card
+  billCard: { marginTop: 16, borderRadius: 20, overflow: 'hidden' },
+  billCardGrad: { padding: 22, position: 'relative', overflow: 'hidden' },
+  deco: { position: 'absolute', borderRadius: 9999, backgroundColor: 'rgba(255,255,255,0.12)' },
+  billCardLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5, marginBottom: 6 },
+  billCardName: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginBottom: 2 },
+  billCardConsumer: { fontSize: 13, color: 'rgba(255,255,255,0.65)', marginBottom: 18 },
+  billCardRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  billCardFieldLabel: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontWeight: '500', marginBottom: 3 },
+  billCardAmt: { fontSize: 22, fontWeight: '900', color: '#FFFFFF' },
+  billCardDueDate: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  billCardPeriod: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  billCardDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.25)' },
+  billExtraInfo: { backgroundColor: '#FFF9C4', padding: 12, marginTop: 1 },
+  billExtraText: { fontSize: 12, color: '#7A6200', fontWeight: '500' },
+  payNowBtn: { height: 56, justifyContent: 'center', alignItems: 'center' },
+  payNowText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
 });
