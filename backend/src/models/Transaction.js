@@ -100,6 +100,26 @@ const Transaction = sequelize.define('Transaction', {
   remarks: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  validity_days: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  validity_expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  kwik_plan_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  reminder_sent: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  bill_reminder_sent: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
   tableName: 'transactions',

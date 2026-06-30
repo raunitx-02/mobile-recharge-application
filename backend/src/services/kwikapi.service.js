@@ -235,12 +235,18 @@ async function checkTransactionStatus(orderId) {
 
 async function detectOperatorAndCircle(mobile) {
   try {
-    const data = await kwikGet('/api/v2/detect_operator.php', { mobile });
+    const data = await kwikGet('/api/v2/detect_operator.php', {
+      mobile,
+      number: mobile, // some versions use 'number'
+    });
+    if (data.status !== 'SUCCESS' && !data.operator_name) {
+      return { success: false, operator: '', circle: '' };
+    }
     return {
-      success:     data.status === 'SUCCESS',
-      operator:    data.operator_name || '',
+      success:     true,
+      operator:    data.operator_name || data.operator || '',
       operatorId:  data.operator_id   || '',
-      circle:      data.circle_name   || '',
+      circle:      data.circle_name   || data.circle || '',
       circleCode:  data.circle_code   || '',
       raw:         data,
     };
@@ -259,13 +265,17 @@ async function detectOperatorAndCircle(mobile) {
  * @param {number|string} opid    - Operator ID
  * @param {string}        circle  - Circle code (from getCircleCodes)
  */
-async function getMobileRechargePlans(opid, circle) {
+async function getMobileRechargePlans(opid, circle_code) {
   try {
-    const data = await kwikGet('/api/v2/plans.php', { opid, circle });
-    const plans = data.plans || data.response || [];
-    return { success: true, plans };
+    const data = await kwikGet('/api/v2/recharge_plans.php', {
+      opid,
+      circle_code,
+      mobile: '9999999999', // required dummy mobile param
+    });
+    const plans = data.plans || data.response || data.data || [];
+    return { success: plans.length > 0, plans };
   } catch (err) {
-    logger.error('KwikAPI getMobileRechargePlans error', { err: err.message, opid, circle });
+    logger.error('KwikAPI getMobileRechargePlans error', { err: err.message, opid, circle_code });
     return { success: false, plans: [] };
   }
 }

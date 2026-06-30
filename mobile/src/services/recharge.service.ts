@@ -4,18 +4,36 @@ interface RechargeData {
   type: 'prepaid' | 'postpaid' | 'dth';
   phone?: string;
   accountNumber?: string;
-  operatorId: string;
+  operatorId?: string;
+  operator?: string;
   circle?: string;
   amount: number;
-  planId?: string;
+  planId?: string | number;
+  validityDays?: number;
+  cashbackUsed?: number;
+}
+
+interface GetPlansParams {
+  operator?: string;
+  operatorCode?: string;
+  circle?: string;
+  opid?: number;
 }
 
 export const rechargeService = {
   getOperators: (type?: string) =>
     API.get('/api/recharge/operators', { params: { type } }),
 
-  getPlans: (operatorId: string, circle?: string) =>
-    API.get(`/api/recharge/operators/${operatorId}/plans`, { params: { circle } }),
+  // Updated: accepts operator name + circle instead of just operatorId
+  getPlans: (params: GetPlansParams | string, circle?: string) => {
+    if (typeof params === 'string') {
+      // Legacy call: getPlans(operatorId, circle)
+      return API.get('/api/recharge/plans', {
+        params: { operator: params, circle },
+      });
+    }
+    return API.get('/api/recharge/plans', { params });
+  },
 
   detectOperator: (phone: string) =>
     API.post('/api/recharge/detect-operator', { phone }),
