@@ -463,7 +463,7 @@ export default function RechargeScreen() {
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
-                <Text style={s.inputLabel} style={{ marginTop: 16 }}>Select Biller</Text>
+                <Text style={[s.inputLabel, { marginTop: 16 }]}>Select Biller</Text>
                 <View style={s.inputWrap}>
                   <TextInput
                     style={[s.input, { paddingLeft: 16 }]}
@@ -497,7 +497,7 @@ export default function RechargeScreen() {
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
-                <Text style={s.inputLabel} style={{ marginTop: 16 }}>DTH Provider</Text>
+                <Text style={[s.inputLabel, { marginTop: 16 }]}>DTH Provider</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8, marginBottom: 16 }}>
                   {DTH_OPERATORS.map(op => (
                     <TouchableOpacity
