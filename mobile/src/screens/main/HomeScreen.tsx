@@ -135,30 +135,14 @@ export default function HomeScreen() {
         {/* Balance Card */}
         <View style={s.balanceCard}>
           <View style={s.balanceTop}>
-            <Text style={s.balanceLabel}>Wallet Balance</Text>
+            <Text style={s.balanceLabel}>Cashback Balance</Text>
             <TouchableOpacity onPress={toggleBalance} style={s.eyeBtn}>
               <Text style={s.eyeIcon}>{balanceVisible ? '👁️' : '🙈'}</Text>
             </TouchableOpacity>
           </View>
-          <Animated.Text style={[s.balanceAmt, { opacity: balanceFade }]}>
+          <Animated.Text style={[s.balanceAmt, { opacity: balanceFade, marginBottom: 0 }]}>
             {loading ? '...' : balanceVisible ? `₹${balance.toFixed(2)}` : '₹ ••••'}
           </Animated.Text>
-          <View style={s.balanceActions}>
-            <TouchableOpacity style={s.balanceActionBtn} onPress={() => navigation.navigate('AddMoney')}>
-              <Text style={s.balanceActionIcon}>＋</Text>
-              <Text style={s.balanceActionLabel}>Add Money</Text>
-            </TouchableOpacity>
-            <View style={s.balanceDivider} />
-            <TouchableOpacity style={s.balanceActionBtn} onPress={() => navigation.navigate('Withdraw')}>
-              <Text style={s.balanceActionIcon}>↑</Text>
-              <Text style={s.balanceActionLabel}>Withdraw</Text>
-            </TouchableOpacity>
-            <View style={s.balanceDivider} />
-            <TouchableOpacity style={s.balanceActionBtn} onPress={() => navigation.navigate('HistoryTab')}>
-              <Text style={s.balanceActionIcon}>📋</Text>
-              <Text style={s.balanceActionLabel}>History</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </LinearGradient>
 

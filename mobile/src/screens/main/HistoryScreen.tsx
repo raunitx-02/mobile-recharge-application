@@ -244,12 +244,12 @@ const s = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
 
-  filtersScroll: { flexShrink: 0 },
+  filtersScroll: { flexShrink: 0, maxHeight: 52 },
   filtersContent: {
-    paddingHorizontal: 16, paddingVertical: 12, gap: 8,
+    paddingHorizontal: 16, paddingVertical: 8, gap: 8,
   },
   chip: {
-    paddingHorizontal: 20, paddingVertical: 8, borderRadius: 100,
+    paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100,
     borderWidth: 1.5, borderColor: colors.border,
     backgroundColor: colors.backgroundCard,
   },

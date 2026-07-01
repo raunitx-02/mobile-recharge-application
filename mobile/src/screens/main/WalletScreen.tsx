@@ -94,24 +94,6 @@ const WalletScreen: React.FC = () => {
           )}
           <Text style={s.balanceNote}>Use up to 20% on any recharge or bill payment</Text>
         </View>
-
-        <View style={s.actionRow}>
-          <TouchableOpacity
-            style={s.actionBtn}
-            onPress={() => navigation.navigate('AddMoney')}
-          >
-            <Text style={s.actionBtnIcon}>＋</Text>
-            <Text style={s.actionBtnLabel}>Add Money</Text>
-          </TouchableOpacity>
-          <View style={s.actionDivider} />
-          <TouchableOpacity
-            style={s.actionBtn}
-            onPress={() => navigation.navigate('Withdraw')}
-          >
-            <Text style={s.actionBtnIcon}>↑</Text>
-            <Text style={s.actionBtnLabel}>Withdraw</Text>
-          </TouchableOpacity>
-        </View>
       </LinearGradient>
 
       {/* How cashback works */}

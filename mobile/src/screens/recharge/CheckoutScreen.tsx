@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Switch, ActivityIndicator, Alert, Linking, Platform,
-  StatusBar, Animated,
+  StatusBar, Animated, TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Toast from 'react-native-toast-message';
@@ -37,6 +37,10 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation, route }) => {
   const [useCashback, setUseCashback]   = useState(false);
   const [initiating, setInitiating]     = useState(false);
   const [payableAmount, setPayableAmount] = useState(plan.amount);
+  
+  // Custom payment selection states
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('gpay');
+  const [customUpiId, setCustomUpiId] = useState('');
 
   const opColors = OPERATOR_COLORS[operator] || OPERATOR_COLORS.Default;
 
@@ -190,14 +194,111 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Payment Methods Info */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Pay Via</Text>
-          <View style={styles.methodsGrid}>
-            {['UPI', 'Credit Card', 'Debit Card', 'Net Banking', 'Wallet'].map(method => (
-              <View key={method} style={styles.methodChip}>
-                <Text style={styles.methodChipText}>{method}</Text>
-              </View>
+          <Text style={styles.cardTitle}>Select Payment Method</Text>
+          
+          {/* UPI Apps list */}
+          <Text style={styles.paymentSectionHeader}>⚡ Popular UPI Apps</Text>
+          <View style={styles.upiAppsList}>
+            {[
+              { id: 'gpay', name: 'Google Pay', icon: '🟢', appUrl: 'gpay://' },
+              { id: 'phonepe', name: 'PhonePe', icon: '🟣', appUrl: 'phonepe://' },
+              { id: 'paytm', name: 'Paytm', icon: '🔵', appUrl: 'paytmmp://' },
+            ].map(app => (
+              <TouchableOpacity
+                key={app.id}
+                style={[styles.upiAppOption, selectedPaymentMethod === app.id && styles.selectedOption]}
+                onPress={() => setSelectedPaymentMethod(app.id)}
+              >
+                <Text style={styles.upiAppIcon}>{app.icon}</Text>
+                <Text style={styles.upiAppName}>{app.name}</Text>
+                {selectedPaymentMethod === app.id && <Text style={styles.checkedIcon}>✓</Text>}
+              </TouchableOpacity>
             ))}
           </View>
+
+          {/* Other UPI ID input */}
+          <TouchableOpacity
+            style={[styles.upiAppOption, selectedPaymentMethod === 'custom_upi' && styles.selectedOption, { marginTop: 8 }]}
+            onPress={() => setSelectedPaymentMethod('custom_upi')}
+          >
+            <Text style={styles.upiAppIcon}>🔑</Text>
+            <Text style={styles.upiAppName}>Pay using other UPI ID</Text>
+            {selectedPaymentMethod === 'custom_upi' && <Text style={styles.checkedIcon}>✓</Text>}
+          </TouchableOpacity>
+
+          {selectedPaymentMethod === 'custom_upi' && (
+            <View style={styles.customUpiInputWrap}>
+              <TextInput
+                style={styles.customUpiInput}
+                placeholder="Enter UPI ID (e.g. name@upi)"
+                placeholderTextColor={colors.textMuted}
+                value={customUpiId}
+                onChangeText={setCustomUpiId}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
+
+          {/* Cards */}
+          <TouchableOpacity
+            style={[styles.upiAppOption, selectedPaymentMethod === 'card' && styles.selectedOption, { marginTop: 16 }]}
+            onPress={() => setSelectedPaymentMethod('card')}
+          >
+            <Text style={styles.upiAppIcon}>💳</Text>
+            <Text style={styles.upiAppName}>Credit / Debit Card</Text>
+            {selectedPaymentMethod === 'card' && <Text style={styles.checkedIcon}>✓</Text>}
+          </TouchableOpacity>
+
+          {selectedPaymentMethod === 'card' && (
+            <View style={styles.cardFormWrap}>
+              <TextInput
+                style={styles.customUpiInput}
+                placeholder="Card Number"
+                keyboardType="number-pad"
+                maxLength={16}
+                placeholderTextColor={colors.textMuted}
+              />
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                <TextInput
+                  style={[styles.customUpiInput, { flex: 1 }]}
+                  placeholder="MM/YY"
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  placeholderTextColor={colors.textMuted}
+                />
+                <TextInput
+                  style={[styles.customUpiInput, { flex: 1 }]}
+                  placeholder="CVV"
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={3}
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Netbanking */}
+          <TouchableOpacity
+            style={[styles.upiAppOption, selectedPaymentMethod === 'netbanking' && styles.selectedOption, { marginTop: 8 }]}
+            onPress={() => setSelectedPaymentMethod('netbanking')}
+          >
+            <Text style={styles.upiAppIcon}>🏦</Text>
+            <Text style={styles.upiAppName}>Net Banking</Text>
+            {selectedPaymentMethod === 'netbanking' && <Text style={styles.checkedIcon}>✓</Text>}
+          </TouchableOpacity>
+
+          {selectedPaymentMethod === 'netbanking' && (
+            <View style={styles.bankGrid}>
+              {['SBI', 'HDFC', 'ICICI', 'Axis'].map(bank => (
+                <TouchableOpacity key={bank} style={styles.bankChip}>
+                  <Text style={styles.bankChipText}>{bank}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
           <Text style={styles.secureNote}>🔒 256-bit encrypted · Secured by PayU</Text>
         </View>
 
@@ -232,6 +333,7 @@ export const CheckoutScreen: React.FC<Props> = ({ navigation, route }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
@@ -299,17 +401,20 @@ const styles = StyleSheet.create({
   summaryTotal: { fontSize: 16, fontWeight: '700', color: colors.text },
   summaryTotalAmt: { fontSize: 22, fontWeight: '900', color: colors.primary, letterSpacing: -0.5 },
 
-  methodsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  methodChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  methodChipText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
-  secureNote: { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
+  paymentSectionHeader: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 10, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  upiAppsList: { gap: 8 },
+  upiAppOption: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  selectedOption: { borderColor: colors.primary, backgroundColor: colors.primarySubtle },
+  upiAppName: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text, marginLeft: 10 },
+  upiAppIcon: { fontSize: 18 },
+  checkedIcon: { fontSize: 14, fontWeight: '800', color: colors.primary },
+  customUpiInputWrap: { marginTop: 8, paddingHorizontal: 4 },
+  customUpiInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, backgroundColor: colors.background, padding: 12, fontSize: 14, color: colors.text, fontWeight: '500' },
+  cardFormWrap: { marginTop: 8, gap: 8 },
+  bankGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  bankChip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 100, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
+  bankChipText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  secureNote: { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 16 },
 
   payBar: {
     position: 'absolute',
