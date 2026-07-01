@@ -198,4 +198,99 @@ router.get('/initiate', verifyJWT, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/payment/recharge-checkout — Web-based payment initiator for recharges
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/recharge-checkout', async (req, res) => {
+  const { token, amount, phone, operator, circle, plan_amount, plan_id, validity, cashback_used, type } = req.query;
+
+  if (!token || !amount || !phone || !operator || !circle) {
+    return res.status(400).send('Missing checkout parameters');
+  }
+
+  // 1. Verify token to resolve user context
+  let decoded;
+  try {
+    const jwt = require('jsonwebtoken');
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).send('Unauthorized / Invalid token');
+  }
+
+  try {
+    const freshUser = await User.findByPk(decoded.userId);
+    if (!freshUser || freshUser.status === 'blocked') {
+      return res.status(401).send('User not found or blocked');
+    }
+
+    const payableAmt = parseFloat(amount);
+    const cashbackUsedVal = parseFloat(cashback_used || '0');
+
+    // 2. Resolve internal Operator config
+    const op = await Operator.findOne({ where: { code: operator.toUpperCase() } }) ||
+               await Operator.findOne({ where: { name: operator } });
+    if (!op) {
+      return res.status(404).send('Operator configuration not found');
+    }
+
+    const ref = `RECHARGE_${Date.now()}`;
+
+    // 3. Initiate Transaction Record in database
+    if (Transaction) {
+      await Transaction.create({
+        user_id: freshUser.id,
+        type: type || 'prepaid',
+        operator: op.name,
+        operator_code: op.code,
+        account_no: phone,
+        circle: circle,
+        opening_balance: freshUser.wallet_balance,
+        recharge_amount: parseFloat(plan_amount || amount),
+        debit_amount: payableAmt,
+        closing_balance: freshUser.wallet_balance - cashbackUsedVal,
+        api_name: 'PAYU',
+        api_request_id: ref,
+        status: 'pending',
+        r_offer_amount: cashbackUsedVal
+      });
+    }
+
+    // 4. Create PayU order
+    const purpose = `${op.name} ${type || 'prepaid'} recharge for ${phone}`;
+    const { txnid, params } = payuService.createPaymentOrder(freshUser, payableAmt, purpose, ref);
+
+    if (Transaction) {
+      await Transaction.update(
+        { api_request_id: txnid },
+        { where: { api_request_id: ref } }
+      );
+    }
+
+    // 5. Render automatic form redirect
+    const formFields = Object.entries(params)
+      .filter(([key]) => key !== 'paymentUrl')
+      .map(([key, value]) => `<input type="hidden" name="${key}" value="${value}" />`)
+      .join('\n');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>Redirecting to PayU...</title></head>
+        <body onload="document.forms[0].submit()">
+          <p>Please wait, redirecting to payment gateway...</p>
+          <form method="POST" action="${params.paymentUrl}">
+            ${formFields}
+          </form>
+        </body>
+      </html>
+    `;
+
+    res.send(html);
+  } catch (err) {
+    logger.error('Recharge payment initiate error', err.message);
+    res.status(500).send('Recharge payment initiation failed: ' + err.message);
+  }
+});
+
 module.exports = router;
+
